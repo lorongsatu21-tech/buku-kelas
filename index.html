@@ -433,7 +433,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '5';
+  var APP_VERSION = '6';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -651,21 +651,62 @@
     return url + sep + params.join('&');
   }
 
+  // Google Apps Script tidak selalu mengizinkan fetch() biasa membaca
+  // balasannya dari domain lain (CORS). Dua fungsi di bawah ini mengakali
+  // itu: pushToSheets lewat form + iframe tersembunyi (kirim data tanpa
+  // perlu baca balasan), fetchFromSheets lewat JSONP/<script> (baca data
+  // tanpa terkena aturan CORS sama sekali).
+
   function pushToSheets(jsonStr){
     var url = buildSheetsRequestUrl();
     if(!url) return Promise.resolve(false);
     sheetsStatus = 'syncing';
-    return fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: jsonStr
-    }).then(function(res){
-      sheetsStatus = res.ok ? 'ok' : 'error';
-      return res.ok;
-    }).catch(function(err){
-      console.error('Gagal sinkron ke Google Sheets', err);
-      sheetsStatus = 'error';
-      return false;
+    return new Promise(function(resolve){
+      try{
+        var frameName = 'bk_push_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+        var iframe = document.createElement('iframe');
+        iframe.name = frameName;
+        iframe.style.display = 'none';
+
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        form.target = frameName;
+        form.style.display = 'none';
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'data';
+        input.value = jsonStr;
+        form.appendChild(input);
+
+        var done = false;
+        var timeoutId = setTimeout(function(){ finish(false); }, 20000);
+        function finish(ok){
+          if(done) return;
+          done = true;
+          clearTimeout(timeoutId);
+          sheetsStatus = ok ? 'ok' : 'error';
+          setTimeout(function(){
+            if(form.parentNode) form.parentNode.removeChild(form);
+            if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
+          }, 500);
+          resolve(ok);
+        }
+
+        // Load pertama = iframe kosong termuat; load kedua = hasil submit form.
+        iframe.onload = function(){
+          iframe.onload = function(){ finish(true); };
+        };
+        iframe.onerror = function(){ finish(false); };
+
+        document.body.appendChild(iframe);
+        document.body.appendChild(form);
+        form.submit();
+      }catch(err){
+        console.error('Gagal mengirim ke Google Sheets', err);
+        sheetsStatus = 'error';
+        resolve(false);
+      }
     });
   }
 
@@ -673,21 +714,42 @@
     var url = buildSheetsRequestUrl();
     if(!url) return Promise.resolve(null);
     sheetsStatus = 'syncing';
-    return fetch(url, { method: 'GET' }).then(function(res){
-      if(!res.ok) throw new Error('HTTP '+res.status);
-      return res.text();
-    }).then(function(text){
-      if(text && text.indexOf('"error":"unauthorized"') > -1){
-        console.error('Kata sandi rahasia (APP_SECRET) tidak cocok dengan Apps Script.');
-        sheetsStatus = 'error';
-        return null;
+    return new Promise(function(resolve){
+      var cbName = '__bk_cb_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+      var script = document.createElement('script');
+      var done = false;
+      var timeoutId = setTimeout(function(){ finish(null, 'error'); }, 20000);
+
+      function cleanup(){
+        clearTimeout(timeoutId);
+        try{ delete window[cbName]; }catch(e){ window[cbName] = undefined; }
+        if(script.parentNode) script.parentNode.removeChild(script);
       }
-      sheetsStatus = 'ok';
-      return text;
-    }).catch(function(err){
-      console.error('Gagal ambil data dari Google Sheets', err);
-      sheetsStatus = 'error';
-      return null;
+      function finish(text, status){
+        if(done) return;
+        done = true;
+        cleanup();
+        sheetsStatus = status;
+        resolve(text);
+      }
+
+      window[cbName] = function(data){
+        var text = JSON.stringify(data);
+        if(text && text.indexOf('"error":"unauthorized"') > -1){
+          console.error('Kata sandi rahasia (APP_SECRET) tidak cocok dengan Apps Script.');
+          finish(null, 'error');
+          return;
+        }
+        finish(text, 'ok');
+      };
+      script.onerror = function(){
+        console.error('Gagal ambil data dari Google Sheets (script error)');
+        finish(null, 'error');
+      };
+
+      var sep = url.indexOf('?') > -1 ? '&' : '?';
+      script.src = url + sep + 'callback=' + encodeURIComponent(cbName);
+      document.head.appendChild(script);
     });
   }
 
