@@ -105,6 +105,18 @@
   }
   .cover-identity-edit input::placeholder{ color:#B7A692; }
   .cover-identity-hint{ font-size:10.5px; color:#B7A692; line-height:1.4; text-align:left; }
+  .identity-chip-list{ display:flex; flex-direction:column; gap:7px; }
+  .identity-chip{
+    display:block; width:100%; text-align:left; background:rgba(203,164,91,0.16);
+    border:1px solid rgba(203,164,91,0.45); color:var(--gold); border-radius:9px;
+    padding:10px 13px; font-size:13px; font-weight:600; cursor:pointer;
+    font-family:'IBM Plex Sans',sans-serif;
+  }
+  .identity-chip:active{ background:rgba(203,164,91,0.28); }
+  .identity-or-divider{
+    text-align:center; font-size:10.5px; color:#9E8E79; text-transform:uppercase;
+    letter-spacing:0.05em; margin:2px 0;
+  }
   .cover-identity-apply{
     background:var(--gold); color:var(--cover-bg); border:none; border-radius:9px;
     padding:10px 13px; font-weight:700; font-size:13.5px; cursor:pointer; font-family:'Zilla Slab',serif;
@@ -433,7 +445,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '6';
+  var APP_VERSION = '7';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -991,32 +1003,58 @@
   /* ---------------- Screen: Cover (Sampul) ---------------- */
 
   var coverIdentityEditing = false;
+  var IDENTITY_HISTORY_KEY = 'buku-kelas-identities-v1';
+
+  function loadIdentityHistory(){
+    try{
+      var raw = window.localStorage.getItem(IDENTITY_HISTORY_KEY);
+      if(!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+  function saveIdentityToHistory(mapel, guru){
+    try{
+      var history = loadIdentityHistory();
+      var mNorm = normalizeKeyPart_(mapel), gNorm = normalizeKeyPart_(guru);
+      var exists = history.some(function(h){
+        return normalizeKeyPart_(h.mapel) === mNorm && normalizeKeyPart_(h.guru) === gNorm;
+      });
+      if(!exists){
+        history.push({ mapel: mapel || '', guru: guru || '' });
+        if(history.length > 8) history = history.slice(history.length - 8);
+        window.localStorage.setItem(IDENTITY_HISTORY_KEY, JSON.stringify(history));
+      }
+    }catch(e){ console.error('Gagal simpan riwayat identitas', e); }
+  }
 
   function coverIdentityHTML(){
     if(coverIdentityEditing){
-      return '<div class="cover-identity-edit">'+
-        '<input type="text" id="coverMapelInput" placeholder="Nama Mapel (mis. Matematika)" value="'+escapeHtml(state.sheetsMapel||'')+'">'+
-        '<input type="text" id="coverGuruInput" placeholder="Guru / Kelas (mis. Pak Budi - 7A)" value="'+escapeHtml(state.sheetsGuru||'')+'">'+
+      var history = loadIdentityHistory();
+      var html = '<div class="cover-identity-edit">';
+      if(history.length > 0){
+        html += '<div class="identity-chip-list">';
+        history.forEach(function(h, idx){
+          var label = (h.mapel && h.guru) ? (h.mapel+' · '+h.guru) : (h.mapel || h.guru);
+          html += '<button class="identity-chip" data-select-identity="'+idx+'">🏷 '+escapeHtml(label)+'</button>';
+        });
+        html += '</div><div class="identity-or-divider">atau isi identitas baru</div>';
+      }
+      html += '<input type="text" id="coverMapelInput" placeholder="Nama Mapel (mis. Matematika)">'+
+        '<input type="text" id="coverGuruInput" placeholder="Guru / Kelas (mis. Pak Budi - 7A)">'+
         '<button class="cover-identity-apply" id="coverIdentityApplyBtn">✓ Terapkan</button>'+
         (!sheetsUrlOf() ? '<div class="cover-identity-hint">Belum tersambung ke Google Sheets — isian ini akan tersimpan lokal dulu, dan otomatis dipakai begitu kamu sambungkan lewat ⚙.</div>' : '')+
         '</div>';
+      return html;
     }
     var label = sheetsIdentityLabel();
     return '<button class="cover-identity" id="coverIdentityBadge">🏷 '+(label ? escapeHtml(label) : 'Isi Nama Mapel &amp; Guru')+'</button>';
   }
 
-  function applyMapelGuruFromCover(){
-    var mapelInput = document.getElementById('coverMapelInput');
-    var guruInput = document.getElementById('coverGuruInput');
-    var mapelVal = mapelInput ? mapelInput.value.trim() : '';
-    var guruVal = guruInput ? guruInput.value.trim() : '';
-    if(!mapelVal && !guruVal){
-      alert('Isi minimal salah satu: Nama Mapel atau Guru/Kelas.\n\nKalau dikosongkan, data kamu akan tercampur dengan siapa pun yang juga membiarkannya kosong di Sheet yang sama.');
-      return; // tetap di mode edit, tidak jadi diterapkan
-    }
+  function switchIdentity(mapel, guru){
     coverIdentityEditing = false;
-    state.sheetsMapel = mapelVal || null;
-    state.sheetsGuru = guruVal || null;
+    state.sheetsMapel = mapel || null;
+    state.sheetsGuru = guru || null;
     // PENTING: simpan LOKAL saja dulu, JANGAN push ke Sheets di sini —
     // ambil dulu data yang sudah ada untuk mapel/guru ini lewat fetch di
     // bawah, supaya data lokal (yang bisa jadi masih kosong/kelas lain)
@@ -1040,6 +1078,27 @@
       renderAll();
     }
   }
+
+  function applyMapelGuruFromCover(){
+    var mapelInput = document.getElementById('coverMapelInput');
+    var guruInput = document.getElementById('coverGuruInput');
+    var mapelVal = mapelInput ? mapelInput.value.trim() : '';
+    var guruVal = guruInput ? guruInput.value.trim() : '';
+    if(!mapelVal && !guruVal){
+      alert('Isi minimal salah satu: Nama Mapel atau Guru/Kelas.\n\nKalau dikosongkan, data kamu akan tercampur dengan siapa pun yang juga membiarkannya kosong di Sheet yang sama.');
+      return; // tetap di mode edit, tidak jadi diterapkan
+    }
+    saveIdentityToHistory(mapelVal, guruVal);
+    switchIdentity(mapelVal, guruVal);
+  }
+
+  function selectIdentityFromHistory(idx){
+    var history = loadIdentityHistory();
+    var item = history[idx];
+    if(!item) return;
+    switchIdentity(item.mapel, item.guru);
+  }
+
 
   function coverHTML(){
     var bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -1831,6 +1890,10 @@
     if(e.target && e.target.id === 'openBookBtn'){ goTOC(); return; }
     if(e.target && e.target.id === 'coverIdentityBadge'){ coverIdentityEditing = true; renderAll(); return; }
     if(e.target && e.target.id === 'coverIdentityApplyBtn'){ applyMapelGuruFromCover(); return; }
+    if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-select-identity')){
+      selectIdentityFromHistory(parseInt(e.target.getAttribute('data-select-identity'), 10));
+      return;
+    }
   });
 
   // Some mobile browsers restore the exact last-seen page (including open
