@@ -364,14 +364,6 @@
   .sheets-badge.syncing{ display:block; background:var(--amber-bg); color:var(--amber); }
   .sheets-badge.error{ display:block; background:var(--red-bg); color:var(--red); }
   .sheets-disconnect{ border:none; background:none; color:var(--ink-soft); text-decoration:underline; font-size:11.5px; padding:6px 0 0; cursor:pointer; display:block; }
-  .sheets-lock-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
-  .sheets-lock-row input[type=text]{ flex:1; margin-bottom:0; }
-  .sheets-lock-row input[type=text][readonly]{ background:var(--paper); color:var(--ink-soft); }
-  .lock-btn{
-    flex:none; border:1px solid var(--line-strong); background:#fff; border-radius:8px;
-    padding:9px 12px; font-size:14px; cursor:pointer;
-  }
-  .lock-btn.unlocked{ border-color:var(--green); color:var(--green); }
   .cover-sync-badge{
     position:absolute; bottom:calc(56px + var(--safe-bottom)); font-size:10.5px; color:#9E8E79;
     display:flex; align-items:center; gap:5px;
@@ -402,14 +394,11 @@
     <div class="sheet-section">
       <h3>🔗 Google Sheets</h3>
       <p class="hint">Sinkronkan data ke Google Sheets supaya bisa dibuka dari HP/browser manapun tanpa kirim file. Nama Mapel &amp; Guru/Kelas diisi langsung di halaman Sampul.</p>
-      <div class="sheets-lock-row">
-        <input type="text" id="sheetsUrlInput" placeholder="Tempel URL Web App Apps Script di sini…" readonly>
-        <button class="lock-btn" id="sheetsUnlockBtn" title="Buka kunci untuk mengubah URL">🔒</button>
-      </div>
+      <input type="text" id="sheetsUrlInput" placeholder="Tempel URL Web App Apps Script di sini…">
       <button class="sheet-btn primary" id="sheetsConnectBtn"><span class="ico">🔗</span> Simpan &amp; Sambungkan</button>
       <div class="sheets-badge" id="sheetsBadge"></div>
       <button class="sheets-disconnect" id="sheetsDisconnectBtn" style="display:none;">Putuskan sambungan</button>
-      <button class="sheets-disconnect" id="sheetsSetPasswordBtn">🔑 Atur kata sandi kunci URL</button>
+      <button class="sheets-disconnect" id="sheetsSetPasswordBtn">🔑 Atur kata sandi pengaturan</button>
     </div>
 
     <button class="sheet-close" id="sheetCloseBtn">Tutup</button>
@@ -425,6 +414,27 @@
   "use strict";
 
   var EMBEDDED_DATA = null;
+
+  // ============================================================
+  // PENGATURAN ADMIN — ubah dua nilai ini sebelum unggah ke GitHub
+  // ============================================================
+  // 1) URL Web App Google Apps Script kamu. Kalau diisi, setiap perangkat
+  //    BARU yang buka link ini akan otomatis tersambung — guru tidak perlu
+  //    buka menu pengaturan sama sekali, cukup isi Mapel/Guru di Sampul.
+  var DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxlbhhlh08gVyhxvfC4B5rsBMpJu-rnW9VbAvSqaUQVT9hTxGXb5vMvpUbSpLXWOt-I/exec';
+
+  // 1b) Kata sandi rahasia — HARUS sama persis dengan APP_SECRET di kode
+  //     Apps Script (.gs) kamu. Ini bukan pengaman total (kode ini tetap
+  //     bisa dibaca siapa saja di GitHub Public), tapi menambah satu
+  //     lapis penghalang untuk akses sembarangan ke URL Apps Script.
+  var APP_SECRET = 'Bismillah061977$';
+
+  // 2) Nomor versi. NAIKKAN angka ini (mis. jadi '2') setiap kali kamu
+  //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
+  //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
+  //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
+  var APP_VERSION = '3';
+  // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
   var STORAGE_KEY = 'buku-kelas-data-v1';
@@ -546,6 +556,7 @@
       renderAll();
       scheduleSave();
       trySyncFromSheetsAfterBoot();
+      checkForUpdate();
       return;
     }
     storageGet(STORAGE_KEY).then(function(res){
@@ -554,10 +565,41 @@
           var parsed = JSON.parse(res.value);
           if(parsed && parsed.classes && parsed.classes.length){ applyLoadedState(parsed); }
         }catch(e){ console.error('Data tersimpan rusak, memakai data awal.', e); }
+      } else {
+        // Perangkat baru, belum pernah ada data tersimpan sama sekali —
+        // otomatis sambungkan ke Google Sheets admin kalau sudah diisi,
+        // supaya guru tidak perlu buka menu pengaturan sendiri.
+        applyDefaultSheetsUrlIfFresh();
       }
       renderAll();
       trySyncFromSheetsAfterBoot();
-    }).catch(function(){ renderAll(); trySyncFromSheetsAfterBoot(); });
+      checkForUpdate();
+    }).catch(function(){
+      applyDefaultSheetsUrlIfFresh();
+      renderAll();
+      trySyncFromSheetsAfterBoot();
+      checkForUpdate();
+    });
+  }
+
+  function applyDefaultSheetsUrlIfFresh(){
+    if(DEFAULT_SHEETS_URL && DEFAULT_SHEETS_URL.indexOf('https://') === 0){
+      state.sheetsUrl = DEFAULT_SHEETS_URL;
+    }
+  }
+
+  function checkForUpdate(){
+    if(location.protocol !== 'https:' && location.protocol !== 'http:') return; // lewati untuk file lokal
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        if(data && data.version && String(data.version) !== String(APP_VERSION)){
+          // Versi lebih baru tersedia di server — muat ulang otomatis
+          // supaya perangkat ini langsung memakai versi terbaru.
+          location.reload();
+        }
+      })
+      .catch(function(){ /* offline / gagal cek versi — abaikan, tidak masalah */ });
   }
 
   function applyLoadedState(parsed){
@@ -601,9 +643,12 @@
     var url = sheetsUrlOf();
     if(!url) return '';
     var key = sheetsKeyOf();
-    if(!key) return url;
+    var params = [];
+    if(APP_SECRET) params.push('secret=' + encodeURIComponent(APP_SECRET));
+    if(key) params.push('key=' + encodeURIComponent(key));
+    if(params.length === 0) return url;
     var sep = url.indexOf('?') > -1 ? '&' : '?';
-    return url + sep + 'key=' + encodeURIComponent(key);
+    return url + sep + params.join('&');
   }
 
   function pushToSheets(jsonStr){
@@ -632,6 +677,11 @@
       if(!res.ok) throw new Error('HTTP '+res.status);
       return res.text();
     }).then(function(text){
+      if(text && text.indexOf('"error":"unauthorized"') > -1){
+        console.error('Kata sandi rahasia (APP_SECRET) tidak cocok dengan Apps Script.');
+        sheetsStatus = 'error';
+        return null;
+      }
       sheetsStatus = 'ok';
       return text;
     }).catch(function(err){
@@ -762,33 +812,21 @@
   function goTOC(){ state.screen='toc'; renderAll(); }
   function goClass(id){ state.selectedClassId=id; state.screen='class'; state.tab='siswa'; renderAll(); }
 
-  var urlUnlockedThisSession = false;
+  var settingsUnlockedThisSession = false;
 
   function openSettingsSheet(){
+    if(state.sheetsLockPassword && !settingsUnlockedThisSession){
+      var pw = prompt('Menu pengaturan ini terkunci. Masukkan kata sandi admin:');
+      if(pw === null) return; // batal, jangan buka
+      if(pw !== state.sheetsLockPassword){ alert('Kata sandi salah.'); return; }
+      settingsUnlockedThisSession = true;
+    }
     var input = document.getElementById('sheetsUrlInput');
     if(input) input.value = state.sheetsUrl || '';
-    updateLockUI();
     refreshSyncBadge();
     document.getElementById('settingsSheetBackdrop').classList.add('open');
   }
   function closeSettingsSheet(){ document.getElementById('settingsSheetBackdrop').classList.remove('open'); }
-
-  function isUrlLocked(){
-    return !!state.sheetsLockPassword && !urlUnlockedThisSession;
-  }
-  function updateLockUI(){
-    var input = document.getElementById('sheetsUrlInput');
-    var lockBtn = document.getElementById('sheetsUnlockBtn');
-    var disBtn = document.getElementById('sheetsDisconnectBtn');
-    var locked = isUrlLocked();
-    if(input) input.readOnly = locked;
-    if(lockBtn){
-      lockBtn.textContent = locked ? '🔒' : '🔓';
-      lockBtn.className = 'lock-btn' + (locked ? '' : ' unlocked');
-      lockBtn.title = locked ? 'Buka kunci untuk mengubah URL' : 'Terkunci setelah menutup menu ini';
-    }
-    if(disBtn) disBtn.disabled = locked && !!sheetsUrlOf();
-  }
 
   /* ---------------- Root render ---------------- */
 
@@ -827,58 +865,40 @@
     if(file) restoreBackup(file);
     e.target.value = '';
   });
-  document.getElementById('sheetsUnlockBtn').addEventListener('click', function(){
-    if(!isUrlLocked()){
-      // Sudah terbuka — kunci lagi manual kalau mau
-      urlUnlockedThisSession = false;
-      updateLockUI();
-      return;
-    }
-    var pw = prompt('Masukkan kata sandi untuk mengubah URL:');
-    if(pw === null) return;
-    if(pw === state.sheetsLockPassword){
-      urlUnlockedThisSession = true;
-      updateLockUI();
-      document.getElementById('sheetsUrlInput').focus();
-    } else {
-      alert('Kata sandi salah.');
-    }
-  });
-
   document.getElementById('sheetsSetPasswordBtn').addEventListener('click', function(){
     if(state.sheetsLockPassword){
       var current = prompt('Masukkan kata sandi saat ini:');
       if(current === null) return;
       if(current !== state.sheetsLockPassword){ alert('Kata sandi salah.'); return; }
-      var action = confirm('Kata sandi benar. Klik OK untuk GANTI kata sandi, atau Batal untuk MENGHAPUS kunci (URL jadi bebas diubah siapa saja).');
+      var action = confirm('Kata sandi benar. Klik OK untuk GANTI kata sandi, atau Batal untuk MENGHAPUS kunci (menu \u2699 jadi bebas dibuka siapa saja).');
       if(!action){
         state.sheetsLockPassword = null;
         scheduleSave();
-        urlUnlockedThisSession = false;
-        updateLockUI();
-        alert('Kunci password dihapus. URL sekarang bebas diubah.');
+        alert('Kunci password dihapus. Menu \u2699 sekarang bebas dibuka siapa saja.');
         return;
       }
     }
-    var pw1 = prompt('Kata sandi baru untuk mengunci URL:');
+    var pw1 = prompt('Kata sandi baru untuk mengunci menu pengaturan:');
     if(!pw1) return;
     var pw2 = prompt('Ulangi kata sandi baru:');
     if(pw1 !== pw2){ alert('Kata sandi tidak cocok, coba lagi.'); return; }
     state.sheetsLockPassword = pw1;
     scheduleSave();
-    urlUnlockedThisSession = true; // yang barusan set password tidak perlu ketik ulang
-    updateLockUI();
-    alert('URL sekarang terkunci dengan kata sandi.');
+    settingsUnlockedThisSession = true; // yang barusan set password tidak perlu ketik ulang sekarang
+    alert('Menu pengaturan sekarang terkunci dengan kata sandi. Ingat baik-baik — tanpa kata sandi ini, panel tidak bisa dibuka lagi, termasuk oleh kamu sendiri.');
   });
 
   document.getElementById('sheetsConnectBtn').addEventListener('click', function(){
-    if(isUrlLocked()){ alert('URL terkunci. Ketuk 🔒 dan masukkan kata sandi dulu untuk mengubahnya.'); return; }
     var val = document.getElementById('sheetsUrlInput').value.trim();
     if(!val){ alert('Tempel URL Web App Google Apps Script dulu.'); return; }
     if(val.indexOf('https://') !== 0){ alert('URL harus dimulai dengan https://'); return; }
     state.sheetsUrl = val;
     refreshSyncBadge();
-    scheduleSave();
+    // PENTING: simpan LOKAL saja dulu (jangan push ke Sheets) — supaya data
+    // lokal yang mungkin masih kosong/lama tidak menimpa data asli yang
+    // sudah ada di Sheets. Data akan diambil dulu lewat fetch di bawah;
+    // push ke Sheets baru terjadi nanti kalau ada perubahan sungguhan.
+    storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
     fetchFromSheets().then(function(text){
       if(text){
         try{
@@ -889,13 +909,12 @@
             renderAll();
             openSettingsSheet();
           }
-        }catch(e){ /* sheet kosong / baru, biarkan data lokal yang dipakai & langsung terkirim */ }
+        }catch(e){ /* sheet kosong / baru — dibiarkan kosong, TIDAK otomatis mengirim data lokal */ }
       }
       refreshSyncBadge();
     });
   });
   document.getElementById('sheetsDisconnectBtn').addEventListener('click', function(){
-    if(isUrlLocked()){ alert('URL terkunci. Ketuk 🔒 dan masukkan kata sandi dulu untuk memutuskan sambungan.'); return; }
     if(!confirm('Putuskan sambungan ke Google Sheets? Data tetap tersimpan lokal di perangkat ini.')) return;
     state.sheetsUrl = null;
     state.sheetsKey = null;
@@ -936,7 +955,11 @@
     coverIdentityEditing = false;
     state.sheetsMapel = mapelVal || null;
     state.sheetsGuru = guruVal || null;
-    save(); // simpan seketika (tidak ditunda) supaya tidak hilang kalau langsung ditutup
+    // PENTING: simpan LOKAL saja dulu, JANGAN push ke Sheets di sini —
+    // ambil dulu data yang sudah ada untuk mapel/guru ini lewat fetch di
+    // bawah, supaya data lokal (yang bisa jadi masih kosong/kelas lain)
+    // tidak menimpa data asli yang sudah tersimpan di Sheets untuk kunci ini.
+    storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
     if(sheetsUrlOf()){
       fetchFromSheets().then(function(text){
         if(text){
@@ -946,8 +969,9 @@
               applyRemoteData(remote);
               storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
             }
-          }catch(e){ /* mapel baru / sheet kosong, lanjut pakai data lokal saat ini */ }
+          }catch(e){ /* mapel baru / sheet kosong — dibiarkan kosong, TIDAK otomatis push data lokal */ }
         }
+        refreshSyncBadge();
         renderAll();
       });
     } else {
@@ -1756,7 +1780,10 @@
   }
   window.addEventListener('pageshow', forceCloseSheets);
   document.addEventListener('visibilitychange', function(){
-    if(document.visibilityState === 'visible') forceCloseSheets();
+    if(document.visibilityState === 'visible'){
+      forceCloseSheets();
+      checkForUpdate();
+    }
   });
 
   // Daftarkan service worker HANYA kalau dibuka lewat http(s) — kalau file
