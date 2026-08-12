@@ -445,7 +445,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '7';
+  var APP_VERSION = '8';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1916,7 +1916,12 @@
   // supaya tidak error, dan aplikasi tetap jalan normal seperti biasa.
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js').catch(function(err){
+      navigator.serviceWorker.register('sw.js').then(function(reg){
+        // Paksa cek versi sw.js terbaru sekarang juga — jangan tunggu
+        // jadwal cek otomatis browser (bisa sampai 24 jam), supaya
+        // perbaikan pada service worker ikut cepat sampai ke semua HP.
+        reg.update().catch(function(){});
+      }).catch(function(err){
         console.error('Gagal mendaftarkan service worker', err);
       });
     });
