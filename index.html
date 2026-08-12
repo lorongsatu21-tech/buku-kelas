@@ -445,7 +445,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '8';
+  var APP_VERSION = '9';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -786,7 +786,9 @@
 
   function trySyncFromSheetsAfterBoot(){
     if(!sheetsUrlOf()) { refreshSyncBadge(); return; }
+    var mySeq = ++syncSeq;
     fetchFromSheets().then(function(text){
+      if(mySeq !== syncSeq){ return; } // ada percobaan lebih baru, abaikan hasil basi ini
       if(text){
         try{
           var remote = JSON.parse(text);
@@ -973,7 +975,9 @@
     // sudah ada di Sheets. Data akan diambil dulu lewat fetch di bawah;
     // push ke Sheets baru terjadi nanti kalau ada perubahan sungguhan.
     storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+    var mySeq = ++syncSeq;
     fetchFromSheets().then(function(text){
+      if(mySeq !== syncSeq){ return; } // ada percobaan lebih baru, abaikan hasil basi ini
       if(text){
         try{
           var remote = JSON.parse(text);
@@ -1051,6 +1055,11 @@
     return '<button class="cover-identity" id="coverIdentityBadge">🏷 '+(label ? escapeHtml(label) : 'Isi Nama Mapel &amp; Guru')+'</button>';
   }
 
+  var syncSeq = 0; // penanda urutan, supaya hasil sinkron yang "basi" (dari
+
+  // percobaan sebelumnya yang lebih lambat selesai) tidak menimpa hasil
+  // yang lebih baru — mencegah data ketuker kalau tombol ditekan berkali-kali.
+
   function switchIdentity(mapel, guru){
     coverIdentityEditing = false;
     state.sheetsMapel = mapel || null;
@@ -1060,8 +1069,10 @@
     // bawah, supaya data lokal (yang bisa jadi masih kosong/kelas lain)
     // tidak menimpa data asli yang sudah tersimpan di Sheets untuk kunci ini.
     storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+    var mySeq = ++syncSeq;
     if(sheetsUrlOf()){
       fetchFromSheets().then(function(text){
+        if(mySeq !== syncSeq){ return; } // ada percobaan lebih baru, abaikan hasil basi ini
         if(text){
           try{
             var remote = JSON.parse(text);
