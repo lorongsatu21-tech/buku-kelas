@@ -473,7 +473,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '1';
+  var APP_VERSION = '3';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1138,7 +1138,12 @@
 
   function goCover(){ state.screen='cover'; renderAll(); }
   function goTOC(){ state.screen='toc'; renderAll(); }
-  function goClass(id){ state.selectedClassId=id; state.screen='class'; state.tab='siswa'; renderAll(); }
+  function goClass(id){
+    state.selectedClassId=id; state.screen='class';
+    var cls = getClass(id);
+    state.tab = (cls && cls.rosterId) ? 'hadir' : 'siswa';
+    renderAll();
+  }
 
   var settingsUnlockedThisSession = false;
 
@@ -1472,11 +1477,10 @@
       });
       html += '</div>';
     } else if(masterRoster.classes.length === 0){
-      html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa, atau buat kelas lokal sendiri di bawah (tidak akan otomatis terisi siswa).</p>';
+      html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa dulu sebelum kelas bisa dipilih di sini.</p>';
     } else {
       html += '<p class="hint">Semua kelas di Data Induk Siswa sudah kamu tambahkan.</p>';
     }
-    html += '<button class="sheet-btn" id="createLocalClassBtn" style="margin-top:10px;"><span class="ico">✏️</span> Buat kelas lokal sendiri</button>';
     html += '<button class="sheet-close" id="classPickerCloseBtn">Tutup</button>';
     document.getElementById('classPickerContent').innerHTML = html;
 
@@ -1493,16 +1497,6 @@
         closeClassPicker();
         renderAll();
       });
-    });
-    document.getElementById('createLocalClassBtn').addEventListener('click', function(){
-      var name = prompt('Nama kelas baru:', 'Kelas '+(state.classes.length+1));
-      if(!name) return;
-      var color = PALETTE[state.classes.length % PALETTE.length];
-      var c = defaultClass(name.trim(), color);
-      state.classes.push(c);
-      scheduleSave();
-      closeClassPicker();
-      renderAll();
     });
     document.getElementById('classPickerCloseBtn').addEventListener('click', closeClassPicker);
 
@@ -1522,7 +1516,7 @@
       '<button class="topbar-action" data-open-settings>⚙</button></div>';
     html += '<div class="screen-body">';
     html += '<div class="subnav">'+
-      '<button data-tab="siswa" class="'+(state.tab==='siswa'?'active':'')+'">Siswa</button>'+
+      (!cls.rosterId ? '<button data-tab="siswa" class="'+(state.tab==='siswa'?'active':'')+'">Siswa</button>' : '')+
       '<button data-tab="hadir" class="'+(state.tab==='hadir'?'active':'')+'">Hadir</button>'+
       '<button data-tab="rekap" class="'+(state.tab==='rekap'?'active':'')+'">Rekap</button>'+
       '<button data-tab="nilai" class="'+(state.tab==='nilai'?'active':'')+'">Nilai</button>'+
@@ -1536,6 +1530,7 @@
 
   function bindClass(cls){
     ensureClassExtras(cls);
+    if(cls.rosterId && state.tab==='siswa'){ state.tab = 'hadir'; } // tab Siswa tidak ada utk kelas terhubung Data Induk
     document.querySelectorAll('.subnav button').forEach(function(btn){
       btn.addEventListener('click', function(){
         state.tab = btn.getAttribute('data-tab');
@@ -1543,7 +1538,7 @@
       });
     });
     var content = document.getElementById('tabContent');
-    if(state.tab==='siswa') renderSiswaTab(content, cls);
+    if(state.tab==='siswa' && !cls.rosterId) renderSiswaTab(content, cls);
     else if(state.tab==='hadir') renderHadirTab(content, cls);
     else if(state.tab==='rekap') renderRekapTab(content, cls);
     else if(state.tab==='materi') renderMateriTab(content, cls);
@@ -2347,4 +2342,3 @@
 </script>
 </body>
 </html>
-
