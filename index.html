@@ -469,7 +469,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '10';
+  var APP_VERSION = '11';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -904,6 +904,11 @@
           '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
           '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
           '</div>';
+        html += '<div class="import-row" style="margin:0 0 10px;">'+
+          '<label class="btn-import" for="rosterImportInput_'+rc.id+'">⇪ Import dari Excel</label>'+
+          '<input type="file" id="rosterImportInput_'+rc.id+'" data-roster-import="'+rc.id+'" accept=".xlsx,.xls,.csv">'+
+          '<span class="import-hint">Kolom pertama / kolom "Nama" akan dibaca.</span>'+
+          '</div>';
         if((rc.students||[]).length > 0){
           html += '<div class="roster-list">';
           rc.students.forEach(function(s, si){
@@ -941,6 +946,16 @@
       masterRoster.classes.push({ id: uid(), name: name, color: color, students: [] });
       persistRoster();
       renderRosterManagerContent();
+    });
+    document.querySelectorAll('[data-roster-import]').forEach(function(inp){
+      inp.addEventListener('change', function(e){
+        var file = e.target.files[0];
+        if(!file) return;
+        var rid = inp.getAttribute('data-roster-import');
+        var rc = getRosterClass(rid);
+        if(rc) handleRosterExcelImport(file, rc);
+        e.target.value = '';
+      });
     });
     document.getElementById('newRosterClassName').addEventListener('keydown', function(e){
       if(e.key==='Enter') document.getElementById('addRosterClassBtn').click();
@@ -1629,6 +1644,27 @@
     el.textContent = msg;
   }
 
+  function parseNamesFromExcelRows(rows){
+    if(!rows || rows.length===0) return [];
+    var nameColIndex = 0, startRow = 0;
+    var firstRow = rows[0].map(function(c){ return String(c).trim().toLowerCase(); });
+    var headerGuessIdx = firstRow.findIndex(function(c){ return c.indexOf('nama')>-1 || c==='name'; });
+    var looksLikeHeader = firstRow.some(function(c){ return c.indexOf('nama')>-1 || c==='name' || c==='no' || c.indexOf('kelas')>-1 || c.indexOf('nis')>-1; });
+    if(headerGuessIdx>-1){ nameColIndex = headerGuessIdx; }
+    if(looksLikeHeader){ startRow = 1; }
+
+    var names = [];
+    for(var i=startRow; i<rows.length; i++){
+      var row = rows[i]; if(!row) continue;
+      var raw = row[nameColIndex];
+      if(raw===undefined || raw===null) continue;
+      var name = String(raw).trim();
+      if(!name || /^\d+([.,]\d+)?$/.test(name)) continue;
+      names.push(name);
+    }
+    return names;
+  }
+
   function handleExcelImport(file, cls){
     if(typeof XLSX === 'undefined'){
       showImportStatus('err', 'Pustaka pembaca Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.');
@@ -1641,24 +1677,7 @@
         var wb = XLSX.read(data, { type: 'array' });
         var sheet = wb.Sheets[wb.SheetNames[0]];
         var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: false });
-        if(!rows || rows.length===0){ showImportStatus('err', 'File Excel kosong atau tidak terbaca.'); return; }
-
-        var nameColIndex = 0, startRow = 0;
-        var firstRow = rows[0].map(function(c){ return String(c).trim().toLowerCase(); });
-        var headerGuessIdx = firstRow.findIndex(function(c){ return c.indexOf('nama')>-1 || c==='name'; });
-        var looksLikeHeader = firstRow.some(function(c){ return c.indexOf('nama')>-1 || c==='name' || c==='no' || c.indexOf('kelas')>-1 || c.indexOf('nis')>-1; });
-        if(headerGuessIdx>-1){ nameColIndex = headerGuessIdx; }
-        if(looksLikeHeader){ startRow = 1; }
-
-        var names = [];
-        for(var i=startRow; i<rows.length; i++){
-          var row = rows[i]; if(!row) continue;
-          var raw = row[nameColIndex];
-          if(raw===undefined || raw===null) continue;
-          var name = String(raw).trim();
-          if(!name || /^\d+([.,]\d+)?$/.test(name)) continue;
-          names.push(name);
-        }
+        var names = parseNamesFromExcelRows(rows);
         if(names.length===0){
           showImportStatus('err', 'Tidak ditemukan nama siswa. Pastikan ada kolom "Nama" atau nama di kolom pertama.');
           return;
@@ -1684,6 +1703,48 @@
     reader.onerror = function(){ showImportStatus('err', 'Gagal membaca file dari perangkat.'); };
     reader.readAsArrayBuffer(file);
   }
+
+  function handleRosterExcelImport(file, rc){
+    if(typeof XLSX === 'undefined'){
+      alert('Pustaka pembaca Excel gagal dimuat. Periksa koneksi internet lalu coba lagi.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        var data = new Uint8Array(e.target.result);
+        var wb = XLSX.read(data, { type: 'array' });
+        var sheet = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: false });
+        var names = parseNamesFromExcelRows(rows);
+        if(names.length===0){
+          alert('Tidak ditemukan nama siswa. Pastikan ada kolom "Nama" atau nama di kolom pertama.');
+          return;
+        }
+        if(!rc.students) rc.students = [];
+        var existing = {};
+        rc.students.forEach(function(s){ existing[s.name.trim().toLowerCase()] = true; });
+        var added = 0, skipped = 0;
+        names.forEach(function(name){
+          var key = name.toLowerCase();
+          if(existing[key]){ skipped++; return; }
+          rc.students.push({ id: uid(), name: name });
+          existing[key] = true; added++;
+        });
+        persistRoster();
+        renderRosterManagerContent();
+        setTimeout(function(){
+          alert('Berhasil impor ' + added + ' siswa baru ke "'+rc.name+'"' + (skipped>0 ? ', ' + skipped + ' dilewati (sudah ada).' : '.'));
+        }, 30);
+      }catch(err){
+        console.error(err);
+        alert('Gagal membaca file. Pastikan formatnya .xlsx, .xls, atau .csv.');
+      }
+    };
+    reader.onerror = function(){ alert('Gagal membaca file dari perangkat.'); };
+    reader.readAsArrayBuffer(file);
+  }
+
 
   /* ---------------- Tab: Kehadiran ---------------- */
 
