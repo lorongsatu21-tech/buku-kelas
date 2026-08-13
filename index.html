@@ -231,6 +231,16 @@
   .import-status.err{ background:var(--red-bg); color:var(--red); }
 
   .roster-list{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .roster-linked-note{
+    background:var(--blue-bg); color:var(--blue); font-size:12px; padding:10px 12px;
+    border-radius:9px; margin-bottom:14px; line-height:1.4;
+  }
+  .roster-class-card{
+    border:1px solid var(--line-strong); border-radius:10px; padding:12px; margin-bottom:12px; background:var(--paper-raised);
+  }
+  .roster-class-head{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .roster-class-name{ font-family:'Zilla Slab',serif; font-weight:600; font-size:14.5px; flex:1; min-width:0; }
+  .roster-class-count{ font-size:11px; color:var(--ink-soft); flex:none; }
   .roster-row{ display:flex; align-items:center; gap:8px; padding:11px 12px; background:var(--paper-raised); border-bottom:1px solid var(--line); }
   .roster-row:last-child{ border-bottom:none; }
   .roster-row .num{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); width:20px; flex:none; }
@@ -413,12 +423,26 @@
       <button class="sheets-disconnect" id="sheetsSetPasswordBtn">🔑 Atur kata sandi pengaturan</button>
     </div>
 
+    <div class="sheet-section">
+      <h3>📋 Data Induk Siswa</h3>
+      <p class="hint">Kelola daftar kelas &amp; nama siswa resmi yang dipakai bersama oleh semua guru. Guru cuma bisa lihat, tidak bisa ubah.</p>
+      <button class="sheet-btn primary" id="openRosterBtn"><span class="ico">📋</span> Kelola Data Induk Siswa</button>
+    </div>
+
     <button class="sheet-close" id="sheetCloseBtn">Tutup</button>
   </div>
 </div>
 
 <div class="sheet-backdrop" id="dateSheetBackdrop">
   <div class="sheet" id="dateSheetContent"></div>
+</div>
+
+<div class="sheet-backdrop" id="classPickerBackdrop">
+  <div class="sheet" id="classPickerContent"></div>
+</div>
+
+<div class="sheet-backdrop" id="rosterSheetBackdrop">
+  <div class="sheet" id="rosterSheetContent"></div>
 </div>
 
 <script>
@@ -445,7 +469,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '9';
+  var APP_VERSION = '10';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -465,6 +489,7 @@
   function defaultClass(name, color){
     return {
       id: uid(), name: name, color: color,
+      rosterId: null, // null = kelas lokal biasa; terisi = terhubung ke Data Induk Siswa (read-only utk guru)
       students: [],
       attendance: {},
       harianItems: [],
@@ -478,16 +503,12 @@
   function ensureClassExtras(cls){
     if(!Array.isArray(cls.materi)) cls.materi = [];
     if(!Array.isArray(cls.catatan)) cls.catatan = [];
+    if(cls.rosterId === undefined) cls.rosterId = null;
   }
 
   function defaultState(){
     return {
-      classes: [
-        defaultClass('Kelas 7A', PALETTE[0]),
-        defaultClass('Kelas 7B', PALETTE[1]),
-        defaultClass('Kelas 8A', PALETTE[2]),
-        defaultClass('Kelas 8B', PALETTE[3]),
-      ],
+      classes: [], // kosong secara default — kelas ditambahkan lewat "+ Tambah Kelas" (pilih dari Data Induk, atau buat kelas lokal sendiri)
       weights: { harian: 20, tugas: 20, uts: 25, uas: 35 },
       selectedClassId: null,
       tab: 'siswa',
@@ -669,10 +690,16 @@
   // perlu baca balasan), fetchFromSheets lewat JSONP/<script> (baca data
   // tanpa terkena aturan CORS sama sekali).
 
-  function pushToSheets(jsonStr){
-    var url = buildSheetsRequestUrl();
+  // Google Apps Script tidak selalu mengizinkan fetch() biasa membaca
+  // balasannya dari domain lain (CORS). Dua fungsi generik di bawah ini
+  // mengakali itu: pushViaForm lewat form + iframe tersembunyi (kirim data
+  // tanpa perlu baca balasan), fetchViaJSONP lewat JSONP/<script> (baca data
+  // tanpa terkena aturan CORS sama sekali). Dipakai baik untuk data privat
+  // per guru maupun Data Induk Siswa (yang dibagikan bersama).
+
+  function pushViaForm(url, jsonStr, onStatus){
     if(!url) return Promise.resolve(false);
-    sheetsStatus = 'syncing';
+    if(onStatus) onStatus('syncing');
     return new Promise(function(resolve){
       try{
         var frameName = 'bk_push_' + Date.now() + '_' + Math.floor(Math.random()*10000);
@@ -697,7 +724,7 @@
           if(done) return;
           done = true;
           clearTimeout(timeoutId);
-          sheetsStatus = ok ? 'ok' : 'error';
+          if(onStatus) onStatus(ok ? 'ok' : 'error');
           setTimeout(function(){
             if(form.parentNode) form.parentNode.removeChild(form);
             if(iframe.parentNode) iframe.parentNode.removeChild(iframe);
@@ -716,16 +743,15 @@
         form.submit();
       }catch(err){
         console.error('Gagal mengirim ke Google Sheets', err);
-        sheetsStatus = 'error';
+        if(onStatus) onStatus('error');
         resolve(false);
       }
     });
   }
 
-  function fetchFromSheets(){
-    var url = buildSheetsRequestUrl();
+  function fetchViaJSONP(url, onStatus){
     if(!url) return Promise.resolve(null);
-    sheetsStatus = 'syncing';
+    if(onStatus) onStatus('syncing');
     return new Promise(function(resolve){
       var cbName = '__bk_cb_' + Date.now() + '_' + Math.floor(Math.random()*100000);
       var script = document.createElement('script');
@@ -741,7 +767,7 @@
         if(done) return;
         done = true;
         cleanup();
-        sheetsStatus = status;
+        if(onStatus) onStatus(status);
         resolve(text);
       }
 
@@ -762,6 +788,210 @@
       var sep = url.indexOf('?') > -1 ? '&' : '?';
       script.src = url + sep + 'callback=' + encodeURIComponent(cbName);
       document.head.appendChild(script);
+    });
+  }
+
+  function pushToSheets(jsonStr){
+    return pushViaForm(buildSheetsRequestUrl(), jsonStr, function(s){ sheetsStatus = s; });
+  }
+  function fetchFromSheets(){
+    return fetchViaJSONP(buildSheetsRequestUrl(), function(s){ sheetsStatus = s; });
+  }
+
+  /* ---- Data Induk Siswa (roster bersama, terpisah dari data privat guru) ---- */
+
+  var ROSTER_KEY = '__roster__';
+  var masterRoster = { classes: [] }; // { id, name, color, students:[{id,name}] }
+  var rosterStatus = 'off'; // off | syncing | ok | error
+
+  function buildRosterRequestUrl(){
+    var url = sheetsUrlOf();
+    if(!url) return '';
+    var params = [];
+    if(APP_SECRET) params.push('secret=' + encodeURIComponent(APP_SECRET));
+    params.push('key=' + encodeURIComponent(ROSTER_KEY));
+    var sep = url.indexOf('?') > -1 ? '&' : '?';
+    return url + sep + params.join('&');
+  }
+  function fetchRoster(){
+    return fetchViaJSONP(buildRosterRequestUrl(), function(s){ rosterStatus = s; });
+  }
+  function pushRosterNow(){
+    return pushViaForm(buildRosterRequestUrl(), JSON.stringify(masterRoster), function(s){ rosterStatus = s; });
+  }
+  function getRosterClass(rosterId){
+    for(var i=0;i<masterRoster.classes.length;i++){ if(masterRoster.classes[i].id===rosterId) return masterRoster.classes[i]; }
+    return null;
+  }
+  // Menyalin nama/warna/daftar siswa dari Data Induk ke tiap kelas guru yang
+  // terhubung (rosterId terisi) — data privat guru (kehadiran/nilai/dst,
+  // dikunci per id siswa) tidak tersentuh sama sekali oleh proses ini.
+  function mergeRosterIntoClasses(){
+    var changed = false;
+    state.classes.forEach(function(cls){
+      if(!cls.rosterId) return;
+      var rc = getRosterClass(cls.rosterId);
+      if(!rc) return;
+      if(cls.name !== rc.name){ cls.name = rc.name; changed = true; }
+      if(cls.color !== rc.color){ cls.color = rc.color; changed = true; }
+      var newStudents = rc.students || [];
+      if(JSON.stringify(cls.students) !== JSON.stringify(newStudents)){
+        cls.students = newStudents.map(function(s){ return { id:s.id, name:s.name }; });
+        changed = true;
+      }
+    });
+    return changed;
+  }
+  function loadRosterAndMerge(){
+    return fetchRoster().then(function(text){
+      if(text){
+        try{
+          var remote = JSON.parse(text);
+          if(remote && Array.isArray(remote.classes)){
+            masterRoster = remote;
+            if(mergeRosterIntoClasses()){
+              storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+            }
+          }
+        }catch(e){ console.error('Data Induk Siswa tidak valid.', e); }
+      }
+    });
+  }
+
+  /* ---------------- Admin: Kelola Data Induk Siswa ---------------- */
+
+  function openRosterManager(){
+    renderRosterManagerContent();
+    document.getElementById('rosterSheetBackdrop').classList.add('open');
+  }
+  function closeRosterManager(){
+    var el = document.getElementById('rosterSheetBackdrop');
+    if(el) el.classList.remove('open');
+  }
+
+  function persistRoster(){
+    mergeRosterIntoClasses();
+    storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+    pushRosterNow().then(function(){ refreshRosterBadge(); });
+  }
+
+  function refreshRosterBadge(){
+    var badge = document.getElementById('rosterBadge');
+    if(!badge) return;
+    var text = rosterStatus==='ok' ? '✓ Tersimpan ke Data Induk' :
+      rosterStatus==='syncing' ? '⏳ Menyimpan…' :
+      rosterStatus==='error' ? '⚠ Gagal menyimpan, cek internet' : '';
+    badge.className = 'sheets-badge' + (text ? ' '+(rosterStatus==='syncing'?'syncing':rosterStatus) : '');
+    badge.textContent = text;
+  }
+
+  function renderRosterManagerContent(){
+    var html = '<div class="sheet-handle"></div><h3>📋 Data Induk Siswa</h3>';
+    html += '<p class="hint">Perubahan di sini otomatis terlihat semua guru yang memilih kelas ini. Guru sendiri tidak bisa menambah/menghapus siswa.</p>';
+
+    if(masterRoster.classes.length === 0){
+      html += '<div class="empty" style="padding:20px 0;"><b>Belum ada kelas</b>Tambahkan kelas pertama di bawah.</div>';
+    } else {
+      masterRoster.classes.forEach(function(rc){
+        html += '<div class="roster-class-card">';
+        html += '<div class="roster-class-head">'+
+          '<span class="topbar-dot" style="background:'+rc.color+'"></span>'+
+          '<span class="roster-class-name">'+escapeHtml(rc.name)+'</span>'+
+          '<span class="roster-class-count">'+(rc.students||[]).length+' siswa</span>'+
+          '<button class="icon-btn" data-del-roster-class="'+rc.id+'" title="Hapus kelas">✕</button>'+
+          '</div>';
+        html += '<div class="roster-add" style="margin:8px 0;">'+
+          '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
+          '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
+          '</div>';
+        if((rc.students||[]).length > 0){
+          html += '<div class="roster-list">';
+          rc.students.forEach(function(s, si){
+            html += '<div class="roster-row">'+
+              '<span class="num">'+(si+1)+'.</span>'+
+              '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
+              '<button class="icon-btn" data-del-roster-student="'+rc.id+'|'+s.id+'" title="Hapus siswa">✕</button>'+
+              '</div>';
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+    }
+
+    html += '<div class="roster-add" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">'+
+      '<input type="text" id="newRosterClassName" placeholder="Nama kelas baru (mis. Kelas 9A)">'+
+      '<button class="btn btn-primary" id="addRosterClassBtn">+ Kelas</button>'+
+      '</div>';
+    html += '<div class="sheets-badge" id="rosterBadge"></div>';
+    html += '<button class="sheet-close" id="rosterCloseBtn">Tutup</button>';
+
+    document.getElementById('rosterSheetContent').innerHTML = html;
+    refreshRosterBadge();
+    bindRosterManagerEvents();
+  }
+
+  function bindRosterManagerEvents(){
+    document.getElementById('rosterCloseBtn').addEventListener('click', closeRosterManager);
+    document.getElementById('addRosterClassBtn').addEventListener('click', function(){
+      var input = document.getElementById('newRosterClassName');
+      var name = input.value.trim();
+      if(!name) return;
+      var color = PALETTE[masterRoster.classes.length % PALETTE.length];
+      masterRoster.classes.push({ id: uid(), name: name, color: color, students: [] });
+      persistRoster();
+      renderRosterManagerContent();
+    });
+    document.getElementById('newRosterClassName').addEventListener('keydown', function(e){
+      if(e.key==='Enter') document.getElementById('addRosterClassBtn').click();
+    });
+    document.querySelectorAll('[data-del-roster-class]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-del-roster-class');
+        var rc = getRosterClass(id);
+        if(!rc) return;
+        if(!confirm('Hapus kelas "'+rc.name+'" dari Data Induk? Guru yang sudah menambahkan kelas ini tetap menyimpan data lama mereka (kehadiran/nilai), tapi daftar siswanya tidak akan ter-update lagi.')) return;
+        masterRoster.classes = masterRoster.classes.filter(function(c){ return c.id!==id; });
+        persistRoster();
+        renderRosterManagerContent();
+      });
+    });
+    document.querySelectorAll('[data-add-roster-student]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var rid = btn.getAttribute('data-add-roster-student');
+        var input = document.getElementById('newStudentInput_'+rid);
+        var name = input.value.trim();
+        if(!name) return;
+        var rc = getRosterClass(rid);
+        if(!rc) return;
+        if(!rc.students) rc.students = [];
+        rc.students.push({ id: uid(), name: name });
+        persistRoster();
+        renderRosterManagerContent();
+      });
+    });
+    document.querySelectorAll('[id^="newStudentInput_"]').forEach(function(inp){
+      inp.addEventListener('keydown', function(e){
+        if(e.key==='Enter'){
+          var rid = inp.id.replace('newStudentInput_','');
+          var btn = document.querySelector('[data-add-roster-student="'+rid+'"]');
+          if(btn) btn.click();
+        }
+      });
+    });
+    document.querySelectorAll('[data-del-roster-student]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var parts = btn.getAttribute('data-del-roster-student').split('|');
+        var rid = parts[0], sid = parts[1];
+        var rc = getRosterClass(rid);
+        if(!rc) return;
+        var st = (rc.students||[]).find(function(s){ return s.id===sid; });
+        if(!st) return;
+        if(!confirm('Hapus "'+st.name+'" dari Data Induk?')) return;
+        rc.students = rc.students.filter(function(s){ return s.id!==sid; });
+        persistRoster();
+        renderRosterManagerContent();
+      });
     });
   }
 
@@ -795,11 +1025,14 @@
           if(remote && remote.classes && remote.classes.length){
             applyRemoteData(remote);
             storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
-            renderAll();
           }
         }catch(e){ console.error('Data dari Google Sheets tidak valid.', e); }
       }
-      refreshSyncBadge();
+      loadRosterAndMerge().then(function(){
+        if(mySeq !== syncSeq) return;
+        refreshSyncBadge();
+        renderAll();
+      });
     });
   }
 
@@ -964,6 +1197,14 @@
     alert('Menu pengaturan sekarang terkunci dengan kata sandi. Ingat baik-baik — tanpa kata sandi ini, panel tidak bisa dibuka lagi, termasuk oleh kamu sendiri.');
   });
 
+  document.getElementById('openRosterBtn').addEventListener('click', function(){
+    closeSettingsSheet();
+    openRosterManager();
+  });
+  document.getElementById('rosterSheetBackdrop').addEventListener('click', function(e){
+    if(e.target === this) closeRosterManager();
+  });
+
   document.getElementById('sheetsConnectBtn').addEventListener('click', function(){
     var val = document.getElementById('sheetsUrlInput').value.trim();
     if(!val){ alert('Tempel URL Web App Google Apps Script dulu.'); return; }
@@ -1082,8 +1323,11 @@
             }
           }catch(e){ /* mapel baru / sheet kosong — dibiarkan kosong, TIDAK otomatis push data lokal */ }
         }
-        refreshSyncBadge();
-        renderAll();
+        loadRosterAndMerge().then(function(){
+          if(mySeq !== syncSeq) return;
+          refreshSyncBadge();
+          renderAll();
+        });
       });
     } else {
       renderAll();
@@ -1190,13 +1434,64 @@
       });
     });
     document.getElementById('addClassBtn').addEventListener('click', function(){
+      openClassPicker();
+    });
+  }
+
+  /* ---------------- Kelas: pilih dari Data Induk Siswa ---------------- */
+
+  function openClassPicker(){
+    var joinedIds = state.classes.map(function(c){ return c.rosterId; }).filter(Boolean);
+    var available = masterRoster.classes.filter(function(rc){ return joinedIds.indexOf(rc.id) === -1; });
+    var html = '<div class="sheet-handle"></div><h3>Tambah Kelas</h3>';
+    if(available.length > 0){
+      html += '<p class="hint">Pilih kelas yang kamu ajar dari Data Induk Siswa — daftar siswanya otomatis terisi:</p>';
+      html += '<div class="sheet-actions">';
+      available.forEach(function(rc){
+        html += '<button class="sheet-btn" data-join-roster-class="'+rc.id+'"><span class="ico">📘</span> '+escapeHtml(rc.name)+
+          ' <span style="color:var(--ink-soft);font-weight:400;">('+(rc.students||[]).length+' siswa)</span></button>';
+      });
+      html += '</div>';
+    } else if(masterRoster.classes.length === 0){
+      html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa, atau buat kelas lokal sendiri di bawah (tidak akan otomatis terisi siswa).</p>';
+    } else {
+      html += '<p class="hint">Semua kelas di Data Induk Siswa sudah kamu tambahkan.</p>';
+    }
+    html += '<button class="sheet-btn" id="createLocalClassBtn" style="margin-top:10px;"><span class="ico">✏️</span> Buat kelas lokal sendiri</button>';
+    html += '<button class="sheet-close" id="classPickerCloseBtn">Tutup</button>';
+    document.getElementById('classPickerContent').innerHTML = html;
+
+    document.querySelectorAll('[data-join-roster-class]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var rid = btn.getAttribute('data-join-roster-class');
+        var rc = getRosterClass(rid);
+        if(!rc) return;
+        var c = defaultClass(rc.name, rc.color || PALETTE[state.classes.length % PALETTE.length]);
+        c.rosterId = rc.id;
+        c.students = (rc.students||[]).map(function(s){ return { id:s.id, name:s.name }; });
+        state.classes.push(c);
+        scheduleSave();
+        closeClassPicker();
+        renderAll();
+      });
+    });
+    document.getElementById('createLocalClassBtn').addEventListener('click', function(){
       var name = prompt('Nama kelas baru:', 'Kelas '+(state.classes.length+1));
       if(!name) return;
       var color = PALETTE[state.classes.length % PALETTE.length];
       var c = defaultClass(name.trim(), color);
       state.classes.push(c);
-      scheduleSave(); renderAll();
+      scheduleSave();
+      closeClassPicker();
+      renderAll();
     });
+    document.getElementById('classPickerCloseBtn').addEventListener('click', closeClassPicker);
+
+    document.getElementById('classPickerBackdrop').classList.add('open');
+  }
+  function closeClassPicker(){
+    var el = document.getElementById('classPickerBackdrop');
+    if(el) el.classList.remove('open');
   }
 
   /* ---------------- Screen: Halaman Kelas ---------------- */
@@ -1240,6 +1535,26 @@
   /* ---------------- Tab: Siswa ---------------- */
 
   function renderSiswaTab(root, cls){
+    if(cls.rosterId){
+      // Kelas ini terhubung ke Data Induk Siswa — daftar hanya bisa dilihat,
+      // penambahan/penghapusan/perubahan nama dikelola admin lewat ⚙.
+      var html = '<div class="roster-linked-note">📋 Daftar siswa kelas ini dikelola admin lewat Data Induk Siswa. Hubungi admin kalau ada perubahan (siswa pindah, nama salah, dst).</div>';
+      if(cls.students.length===0){
+        html += '<div class="empty"><b>Belum ada siswa</b>Admin belum menambahkan siswa untuk kelas ini di Data Induk.</div>';
+      } else {
+        html += '<div class="roster-list">';
+        cls.students.forEach(function(s, i){
+          html += '<div class="roster-row">'+
+            '<span class="num">'+(i+1)+'.</span>'+
+            '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
+            '</div>';
+        });
+        html += '</div>';
+      }
+      root.innerHTML = html;
+      return;
+    }
+
     var html = '';
     html += '<div class="roster-add">'+
       '<input type="text" id="newStudentName" placeholder="Nama siswa baru…">'+
@@ -1462,6 +1777,9 @@
 
   document.getElementById('dateSheetBackdrop').addEventListener('click', function(e){
     if(e.target === this) closeDatePicker();
+  });
+  document.getElementById('classPickerBackdrop').addEventListener('click', function(e){
+    if(e.target === this) closeClassPicker();
   });
 
   function renderHadirTab(root, cls){
@@ -1913,6 +2231,8 @@
   function forceCloseSheets(){
     closeSettingsSheet();
     closeDatePicker();
+    closeClassPicker();
+    closeRosterManager();
   }
   window.addEventListener('pageshow', forceCloseSheets);
   document.addEventListener('visibilitychange', function(){
