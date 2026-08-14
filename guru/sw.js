@@ -4,7 +4,7 @@
 // semua data tetap ditangani oleh aplikasi sendiri (localStorage + Google
 // Sheets), bukan oleh service worker ini.
 
-const CACHE_NAME = 'buku-kelas-shell-v2';
+const CACHE_NAME = 'buku-kelas-guru-shell-v1';
 const SHELL_FILES = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (event) {

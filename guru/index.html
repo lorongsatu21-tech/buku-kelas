@@ -474,11 +474,11 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '7';
+  var APP_VERSION = '8';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
-  var STORAGE_KEY = 'buku-kelas-data-v1';
+  var STORAGE_KEY = 'buku-kelas-guru-data-v1';
 
   function uid(){ return Math.random().toString(36).slice(2,10); }
   function todayISO(){ var d=new Date(); return d.toISOString().slice(0,10); }
@@ -1286,7 +1286,7 @@
   /* ---------------- Screen: Cover (Sampul) ---------------- */
 
   var coverIdentityEditing = false;
-  var IDENTITY_HISTORY_KEY = 'buku-kelas-identities-v1';
+  var IDENTITY_HISTORY_KEY = 'buku-kelas-guru-identities-v1';
 
   function loadIdentityHistory(){
     try{
