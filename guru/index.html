@@ -10,8 +10,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Buku Kelas Guru">
-<meta name="theme-color" content="#33201B">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2333201B'/%3E%3Crect x='24' y='20' width='52' height='62' rx='3' fill='%23F7F2E7'/%3E%3Crect x='24' y='20' width='10' height='62' rx='2' fill='%238B2E3C'/%3E%3Cline x1='42' y1='34' x2='68' y2='34' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='45' x2='68' y2='45' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='56' x2='60' y2='56' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#1B2A3D">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231B2A3D'/%3E%3Crect x='24' y='20' width='52' height='62' rx='3' fill='%23F7F2E7'/%3E%3Crect x='24' y='20' width='10' height='62' rx='2' fill='%238B2E3C'/%3E%3Cline x1='42' y1='34' x2='68' y2='34' stroke='%231B2A3D' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='45' x2='68' y2='45' stroke='%231B2A3D' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='56' x2='60' y2='56' stroke='%231B2A3D' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 
@@ -38,8 +38,8 @@
     --blue-bg:#E1EBF0;
     --red:#B23A3A;
     --red-bg:#F5E0DE;
-    --cover-bg:#33201B;
-    --cover-bg2:#472C24;
+    --cover-bg:#1B2A3D;
+    --cover-bg2:#24384F;
     --gold:#CBA45B;
     --radius:12px;
     --shadow:0 1px 2px rgba(36,43,34,0.06), 0 6px 16px -8px rgba(36,43,34,0.22);
@@ -239,6 +239,7 @@
     border:1px solid var(--line-strong); border-radius:10px; padding:12px; margin-bottom:12px; background:var(--paper-raised);
   }
   .roster-class-head{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .roster-toggle-btn{ font-size:12px; padding:2px 4px; flex:none; }
   .roster-class-name{ font-family:'Zilla Slab',serif; font-weight:600; font-size:14.5px; flex:1; min-width:0; }
   .roster-class-count{ font-size:11px; color:var(--ink-soft); flex:none; }
   .roster-row{ display:flex; align-items:center; gap:8px; padding:11px 12px; background:var(--paper-raised); border-bottom:1px solid var(--line); }
@@ -473,7 +474,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '3';
+  var APP_VERSION = '4';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -889,6 +890,8 @@
     badge.textContent = text;
   }
 
+  var rosterCollapsedIds = {};
+
   function renderRosterManagerContent(){
     var html = '<div class="sheet-handle"></div><h3>📋 Data Induk Siswa</h3>';
     html += '<p class="hint">Perubahan di sini otomatis terlihat semua guru yang memilih kelas ini. Guru sendiri tidak bisa menambah/menghapus siswa.</p>';
@@ -897,32 +900,36 @@
       html += '<div class="empty" style="padding:20px 0;"><b>Belum ada kelas</b>Tambahkan kelas pertama di bawah.</div>';
     } else {
       masterRoster.classes.forEach(function(rc){
+        var collapsed = !!rosterCollapsedIds[rc.id];
         html += '<div class="roster-class-card">';
         html += '<div class="roster-class-head">'+
+          '<button class="icon-btn roster-toggle-btn" data-toggle-roster-class="'+rc.id+'" title="'+(collapsed?'Perluas':'Ciutkan')+'">'+(collapsed?'▸':'▾')+'</button>'+
           '<span class="topbar-dot" style="background:'+rc.color+'"></span>'+
           '<span class="roster-class-name">'+escapeHtml(rc.name)+'</span>'+
           '<span class="roster-class-count">'+(rc.students||[]).length+' siswa</span>'+
           '<button class="icon-btn" data-del-roster-class="'+rc.id+'" title="Hapus kelas">✕</button>'+
           '</div>';
-        html += '<div class="roster-add" style="margin:8px 0;">'+
-          '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
-          '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
-          '</div>';
-        html += '<div class="import-row" style="margin:0 0 10px;">'+
-          '<label class="btn-import" for="rosterImportInput_'+rc.id+'">⇪ Import dari Excel</label>'+
-          '<input type="file" id="rosterImportInput_'+rc.id+'" data-roster-import="'+rc.id+'" accept=".xlsx,.xls,.csv">'+
-          '<span class="import-hint">Kolom pertama / kolom "Nama" akan dibaca.</span>'+
-          '</div>';
-        if((rc.students||[]).length > 0){
-          html += '<div class="roster-list">';
-          rc.students.forEach(function(s, si){
-            html += '<div class="roster-row">'+
-              '<span class="num">'+(si+1)+'.</span>'+
-              '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
-              '<button class="icon-btn" data-del-roster-student="'+rc.id+'|'+s.id+'" title="Hapus siswa">✕</button>'+
-              '</div>';
-          });
-          html += '</div>';
+        if(!collapsed){
+          html += '<div class="roster-add" style="margin:8px 0;">'+
+            '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
+            '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
+            '</div>';
+          html += '<div class="import-row" style="margin:0 0 10px;">'+
+            '<label class="btn-import" for="rosterImportInput_'+rc.id+'">⇪ Import dari Excel</label>'+
+            '<input type="file" id="rosterImportInput_'+rc.id+'" data-roster-import="'+rc.id+'" accept=".xlsx,.xls,.csv">'+
+            '<span class="import-hint">Kolom pertama / kolom "Nama" akan dibaca.</span>'+
+            '</div>';
+          if((rc.students||[]).length > 0){
+            html += '<div class="roster-list">';
+            rc.students.forEach(function(s, si){
+              html += '<div class="roster-row">'+
+                '<span class="num">'+(si+1)+'.</span>'+
+                '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
+                '<button class="icon-btn" data-del-roster-student="'+rc.id+'|'+s.id+'" title="Hapus siswa">✕</button>'+
+                '</div>';
+            });
+            html += '</div>';
+          }
         }
         html += '</div>';
       });
@@ -942,6 +949,13 @@
 
   function bindRosterManagerEvents(){
     document.getElementById('rosterCloseBtn').addEventListener('click', closeRosterManager);
+    document.querySelectorAll('[data-toggle-roster-class]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-toggle-roster-class');
+        rosterCollapsedIds[id] = !rosterCollapsedIds[id];
+        renderRosterManagerContent();
+      });
+    });
     document.getElementById('addRosterClassBtn').addEventListener('click', function(){
       var input = document.getElementById('newRosterClassName');
       var name = input.value.trim();
@@ -1390,9 +1404,9 @@
         '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
           '<rect x="22" y="18" width="56" height="66" rx="3" fill="#F7F2E7"/>'+
           '<rect x="22" y="18" width="11" height="66" rx="2" fill="#8B2E3C"/>'+
-          '<line x1="42" y1="34" x2="70" y2="34" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
-          '<line x1="42" y1="46" x2="70" y2="46" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
-          '<line x1="42" y1="58" x2="62" y2="58" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="34" x2="70" y2="34" stroke="#1B2A3D" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="46" x2="70" y2="46" stroke="#1B2A3D" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="58" x2="62" y2="58" stroke="#1B2A3D" stroke-width="3.5" stroke-linecap="round"/>'+
         '</svg>'+
       '</div>'+
       '<h1 class="cover-title">Buku Kelas Guru</h1>'+
