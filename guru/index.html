@@ -474,7 +474,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '6';
+  var APP_VERSION = '7';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1491,12 +1491,25 @@
       });
       html += '</div>';
     } else if(masterRoster.classes.length === 0){
-      html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa dulu sebelum kelas bisa dipilih di sini.</p>';
+      if(rosterStatus === 'error'){
+        html += '<p class="hint">⚠ Gagal mengambil Data Induk Siswa dari Google Sheets (bukan berarti kosong — cuma gagal diambil). Coba tap "Coba lagi" di bawah, atau tutup-buka aplikasi lagi.</p>';
+        html += '<button class="sheet-btn" id="retryRosterBtn"><span class="ico">🔄</span> Coba lagi</button>';
+      } else {
+        html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa dulu sebelum kelas bisa dipilih di sini.</p>';
+      }
     } else {
       html += '<p class="hint">Semua kelas di Data Induk Siswa sudah kamu tambahkan.</p>';
     }
     html += '<button class="sheet-close" id="classPickerCloseBtn">Tutup</button>';
     document.getElementById('classPickerContent').innerHTML = html;
+
+    var retryBtn = document.getElementById('retryRosterBtn');
+    if(retryBtn){
+      retryBtn.addEventListener('click', function(){
+        retryBtn.textContent = 'Mengambil data…';
+        loadRosterAndMerge().then(function(){ openClassPicker(); });
+      });
+    }
 
     document.querySelectorAll('[data-join-roster-class]').forEach(function(btn){
       btn.addEventListener('click', function(){
