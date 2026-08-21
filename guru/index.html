@@ -200,10 +200,10 @@
   }
   .subnav button.active{ background:var(--ink-strong); color:var(--paper-raised); }
 
-  input[type=text], input[type=number], input[type=date]{
+  input[type=text], input[type=number], input[type=date], input[type=time]{
     font-family:'IBM Plex Sans', sans-serif; font-size:14.5px;
     border:1px solid var(--line-strong); border-radius:8px; padding:9px 10px;
-    background:#fff; color:var(--ink-strong);
+    background:#fff; color:var(--ink-strong); box-sizing:border-box;
   }
   input[type=number]{ font-family:'IBM Plex Mono', monospace; width:60px; text-align:center; }
   input:focus, button:focus{ outline:2px solid var(--accent); outline-offset:1px; }
@@ -524,7 +524,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '15';
+  var APP_VERSION = '16';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1496,7 +1496,7 @@
       '</select>'+
       '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
         '<div style="flex:0 0 72px;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Ke</label>'+
-          '<input type="number" min="1" id="jadwalJamKe" placeholder="2" style="width:100%;"></div>'+
+          '<input type="number" min="1" id="jadwalJamKe" style="width:100%;"></div>'+
         '<div style="flex:1;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Mulai</label>'+
           '<input type="time" id="jadwalStart" style="width:100%;"></div>'+
         '<div style="flex:1;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Selesai</label>'+
