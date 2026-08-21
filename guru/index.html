@@ -402,28 +402,33 @@
   /* ---------------- Cetak / PDF ---------------- */
   #printArea{ display:none; --print-font-size:11pt; }
   @media print{
-    @page{ size: A4 landscape; margin: 12mm; }
+    @page{ size: A4 portrait; margin: 10mm; }
+    html, body{ margin:0 !important; padding:0 !important; height:auto !important; }
     body *{ visibility:hidden; }
     #printArea, #printArea *{ visibility:visible; }
     #printArea{
       display:block !important; position:absolute; left:0; top:0; width:100%;
       font-family:'IBM Plex Sans', sans-serif; color:#111;
+      page-break-after:avoid; page-break-inside:avoid;
     }
-    .print-head{ margin-bottom:10px; }
-    .print-head h1{ font-family:'Zilla Slab',serif; font-size:18px; margin:0 0 3px; }
-    .print-head p{ font-size:11px; color:#444; margin:0; }
+    .print-head{ margin-bottom:8px; page-break-after:avoid; }
+    .print-head h1{ font-family:'Zilla Slab',serif; font-size:16px; margin:0 0 3px; }
+    .print-head p{ font-size:10px; color:#444; margin:0; }
     table.print-table{
       width:100%; border-collapse:collapse; table-layout:auto;
       font-size:var(--print-font-size, 11pt);
-      page-break-inside:avoid;
+      page-break-inside:avoid; page-break-after:avoid;
     }
     table.print-table tr{ page-break-inside:avoid; }
+    table.print-table{ table-layout:fixed; }
     table.print-table th, table.print-table td{
       border:1px solid #999; text-align:center;
-      padding:calc(var(--print-font-size, 11pt) * 0.3) calc(var(--print-font-size, 11pt) * 0.35);
-      white-space:nowrap;
+      padding:calc(var(--print-font-size, 11pt) * 0.28) calc(var(--print-font-size, 11pt) * 0.3);
+      overflow-wrap:break-word; word-break:break-word;
     }
     table.print-table th{ background:#eee; font-weight:700; }
+    table.print-table td:nth-child(1), table.print-table th:nth-child(1){ width:4%; }
+    table.print-table td:nth-child(2), table.print-table th:nth-child(2){ width:20%; }
   }
 </style>
 </head>
@@ -502,7 +507,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '10';
+  var APP_VERSION = '11';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -2331,12 +2336,12 @@
   // pixel presisi (tidak bisa 100% dijamin utk kelas yang sangat besar /
   // kolom yang sangat banyak, tapi cukup akurat utk ukuran kelas biasa).
   function fitFontSize(rowCount, colCount){
-    var usableHeightMm = 178;   // tinggi kertas A4 landscape setelah margin & judul
-    var usableWidthMm = 273;    // lebar kertas A4 landscape setelah margin
+    var usableHeightMm = 250;   // tinggi kertas A4 portrait setelah margin, judul & jaga-jaga
+    var usableWidthMm = 178;    // lebar kertas A4 portrait setelah margin
     var byHeight = usableHeightMm / (rowCount + 1) / 1.35;
     var byWidth = usableWidthMm / colCount / 3.1;
     var pt = Math.min(byHeight, byWidth);
-    return Math.max(6, Math.min(11, pt));
+    return Math.max(5, Math.min(11, pt));
   }
 
   function printRekap(cls, month, monthLabel){
