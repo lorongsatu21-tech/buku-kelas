@@ -399,11 +399,30 @@
   .cover-sync-badge.ok .dot{ background:var(--green); }
   .cover-sync-badge.error .dot{ background:var(--red); }
   .cover-sync-badge.syncing .dot{ background:var(--gold); }
+  /* ---------------- Cetak / PDF ---------------- */
+  #printArea{ display:none; }
+  @media print{
+    @page{ size: A4 landscape; margin: 12mm; }
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{
+      display:block !important; position:absolute; left:0; top:0; width:100%;
+      font-family:'IBM Plex Sans', sans-serif; color:#111;
+    }
+    .print-head{ margin-bottom:14px; }
+    .print-head h1{ font-family:'Zilla Slab',serif; font-size:20px; margin:0 0 4px; }
+    .print-head p{ font-size:12px; color:#444; margin:0; }
+    table.print-table{ width:100%; border-collapse:collapse; font-size:11px; }
+    table.print-table th, table.print-table td{ border:1px solid #999; padding:5px 6px; text-align:center; }
+    table.print-table th{ background:#eee; font-weight:700; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app-shell" id="appShell"></div>
+
+<div id="printArea"></div>
 
 <div class="sheet-backdrop" id="settingsSheetBackdrop">
   <div class="sheet">
@@ -474,7 +493,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '8';
+  var APP_VERSION = '9';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1948,6 +1967,7 @@
       '<div style="display:flex;gap:6px;flex:none;">'+
         '<button class="icon-btn" id="prevMonthBtn" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">‹</button>'+
         '<button class="icon-btn" id="nextMonthBtn" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">›</button>'+
+        '<button class="icon-btn" id="printRekapBtn" title="Cetak / Simpan PDF" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">🖨️</button>'+
       '</div></div>';
 
     html += '<div class="table-wrap"><table class="recap"><thead><tr><th>Nama</th><th>H</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead><tbody>';
@@ -1987,6 +2007,9 @@
     document.getElementById('nextMonthBtn').addEventListener('click', function(){
       root.setAttribute('data-recap-month', shiftMonth(month, 1));
       renderRekapTab(root, cls);
+    });
+    document.getElementById('printRekapBtn').addEventListener('click', function(){
+      printRekap(cls, month, monthLabel);
     });
   }
 
@@ -2152,6 +2175,7 @@
     html += '<div class="weights-toggle">'+
       '<button class="btn" id="toggleWeights" style="font-size:12.5px;padding:8px 12px;">⚖ Bobot</button>'+
       '<button class="btn" id="exportExcelBtn" style="font-size:12.5px;padding:8px 12px;">⇩ Ekspor Excel</button>'+
+      '<button class="btn" id="printNilaiBtn" style="font-size:12.5px;padding:8px 12px;">🖨️ Cetak / PDF</button>'+
       '</div>';
 
     html += '<div class="weights-panel" id="weightsPanel">'+
@@ -2209,6 +2233,7 @@
       document.getElementById('weightsPanel').classList.toggle('open');
     });
     document.getElementById('exportExcelBtn').addEventListener('click', function(){ exportClassToExcel(cls); });
+    document.getElementById('printNilaiBtn').addEventListener('click', function(){ printNilai(cls); });
 
     root.querySelectorAll('.weights-panel input[type=number]').forEach(function(inp){
       inp.addEventListener('input', function(){
@@ -2275,6 +2300,80 @@
         scheduleSave(); renderNilaiTab(root, cls);
       });
     });
+  }
+
+  /* ---------------- Cetak / Simpan PDF (pakai fitur Print bawaan browser) ---------------- */
+
+  function printHTML(title, subtitle, bodyHTML){
+    var area = document.getElementById('printArea');
+    if(!area){ alert('Fitur cetak tidak tersedia di perangkat ini.'); return; }
+    area.innerHTML =
+      '<div class="print-head">'+
+        '<h1>'+escapeHtml(title)+'</h1>'+
+        (subtitle ? '<p>'+escapeHtml(subtitle)+'</p>' : '')+
+      '</div>'+
+      bodyHTML;
+    window.print();
+  }
+
+  function printRekap(cls, month, monthLabel){
+    var identity = sheetsIdentityLabel();
+    var subtitleParts = [cls.name];
+    if(identity) subtitleParts.push(identity);
+    subtitleParts.push('Rekap ' + monthLabel);
+    var subtitle = subtitleParts.join(' — ');
+
+    var body = '<table class="print-table"><thead><tr><th>No</th><th>Nama</th><th>H</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead><tbody>';
+    var totals = {H:0,S:0,I:0,A:0};
+    cls.students.forEach(function(s, i){
+      var counts = {H:0,S:0,I:0,A:0};
+      Object.keys(cls.attendance).forEach(function(d){
+        if(d.slice(0,7)===month){ var code = cls.attendance[d][s.id]; if(code){ counts[code]++; totals[code]++; } }
+      });
+      var total = counts.H+counts.S+counts.I+counts.A;
+      var pct = total>0 ? Math.round((counts.H/total)*100) : 0;
+      body += '<tr><td>'+(i+1)+'</td><td style="text-align:left;">'+escapeHtml(s.name)+'</td>'+
+        '<td>'+counts.H+'</td><td>'+counts.S+'</td><td>'+counts.I+'</td><td>'+counts.A+'</td>'+
+        '<td>'+(total>0?pct+'%':'—')+'</td></tr>';
+    });
+    var totalAll = totals.H+totals.S+totals.I+totals.A;
+    var totalPct = totalAll>0 ? Math.round((totals.H/totalAll)*100) : 0;
+    body += '<tr style="font-weight:700;"><td colspan="2">Total</td><td>'+totals.H+'</td><td>'+totals.S+'</td><td>'+totals.I+'</td><td>'+totals.A+'</td><td>'+(totalAll>0?totalPct+'%':'—')+'</td></tr>';
+    body += '</tbody></table>';
+
+    printHTML('Rekap Kehadiran', subtitle, body);
+  }
+
+  function printNilai(cls){
+    var identity = sheetsIdentityLabel();
+    var subtitleParts = [cls.name];
+    if(identity) subtitleParts.push(identity);
+    var subtitle = subtitleParts.join(' — ');
+
+    var header = '<th>No</th><th style="text-align:left;">Nama</th>';
+    cls.harianItems.forEach(function(it){ header += '<th>'+escapeHtml(it.name)+'</th>'; });
+    header += '<th>Rata2 Harian</th>';
+    cls.tugasItems.forEach(function(it){ header += '<th>'+escapeHtml(it.name)+'</th>'; });
+    header += '<th>Rata2 Tugas</th><th>UTS</th><th>UAS</th><th>Rapor</th>';
+
+    var body = '<table class="print-table"><thead><tr>'+header+'</tr></thead><tbody>';
+    cls.students.forEach(function(s, i){
+      var sc = ensureScoreEntry(cls, s.id);
+      var r = computeRapor(cls, s.id);
+      var finalVal = (sc.raporOverride!==null && sc.raporOverride!==undefined && sc.raporOverride!=='') ? sc.raporOverride : r.computed;
+      body += '<tr><td>'+(i+1)+'</td><td style="text-align:left;">'+escapeHtml(s.name)+'</td>';
+      cls.harianItems.forEach(function(it){ var v=sc.harian[it.id]; body += '<td>'+(v!==undefined&&v!==null?v:'')+'</td>'; });
+      body += '<td>'+(r.hAvg!==null?round1(r.hAvg):'—')+'</td>';
+      cls.tugasItems.forEach(function(it){ var v=sc.tugas[it.id]; body += '<td>'+(v!==undefined&&v!==null?v:'')+'</td>'; });
+      body += '<td>'+(r.tAvg!==null?round1(r.tAvg):'—')+'</td>';
+      body += '<td>'+(sc.uts!==undefined&&sc.uts!==null?sc.uts:'')+'</td>';
+      body += '<td>'+(sc.uas!==undefined&&sc.uas!==null?sc.uas:'')+'</td>';
+      body += '<td style="font-weight:700;">'+(finalVal!==null&&finalVal!==undefined&&!isNaN(finalVal)?finalVal:'—')+'</td>';
+      body += '</tr>';
+    });
+    body += '</tbody></table>';
+
+    printHTML('Daftar Nilai', subtitle, body);
   }
 
   function exportClassToExcel(cls){
