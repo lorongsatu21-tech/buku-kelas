@@ -4,7 +4,7 @@
 // semua data tetap ditangani oleh aplikasi sendiri (localStorage + Google
 // Sheets), bukan oleh service worker ini.
 
-const CACHE_NAME = 'buku-kelas-guru-shell-v1';
+const CACHE_NAME = 'buku-kelas-guru-shell-v2';
 const SHELL_FILES = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (event) {
@@ -39,7 +39,7 @@ self.addEventListener('fetch', function (event) {
   if (reqUrl.origin !== self.location.origin) return; // biarkan browser yang urus langsung
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-store' }) // paksa lewati cache HTTP browser/CDN, selalu ambil yang terbaru
       .then(function (res) {
         var resClone = res.clone();
         caches.open(CACHE_NAME).then(function (cache) { cache.put(event.request, resClone); });
