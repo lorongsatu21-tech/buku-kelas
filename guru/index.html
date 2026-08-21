@@ -231,6 +231,19 @@
   .import-status.err{ background:var(--red-bg); color:var(--red); }
 
   .roster-list{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .jadwal-list{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .jadwal-row{
+    display:flex; align-items:center; gap:10px; padding:6px 12px; background:var(--paper-raised);
+    border-bottom:1px solid var(--line);
+  }
+  .jadwal-row:last-child{ border-bottom:none; }
+  .jadwal-row .jadwal-time{
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:15px; color:var(--accent); flex:none;
+  }
+  .jadwal-row .jadwal-class{
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:15px; font-weight:600; color:var(--ink-strong);
+  }
   .roster-linked-note{
     background:var(--blue-bg); color:var(--blue); font-size:12px; padding:10px 12px;
     border-radius:9px; margin-bottom:14px; line-height:1.4;
@@ -507,7 +520,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '12';
+  var APP_VERSION = '13';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1497,13 +1510,11 @@
           .sort(function(a,b){ return (a.startTime||'').localeCompare(b.startTime||''); });
         if(entries.length===0) return;
         html += '<h3 class="recap-title" style="margin-top:18px;">'+day+'</h3>';
-        html += '<div class="roster-list">';
+        html += '<div class="jadwal-list">';
         entries.forEach(function(j){
-          html += '<div class="roster-row">'+
-            '<div style="flex:1;min-width:0;">'+
-              '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:var(--ink-soft);">'+(j.startTime||'--:--')+' – '+(j.endTime||'--:--')+'</div>'+
-              '<div style="font-size:13.5px;color:var(--ink-strong);">'+escapeHtml(j.className||'')+'</div>'+
-            '</div>'+
+          html += '<div class="jadwal-row">'+
+            '<span class="jadwal-time">'+(j.startTime||'--:--')+'–'+(j.endTime||'--:--')+'</span>'+
+            '<span class="jadwal-class">'+escapeHtml(j.className||'')+'</span>'+
             '<button class="icon-btn" data-del-jadwal="'+j.id+'" title="Hapus">✕</button>'+
             '</div>';
         });
