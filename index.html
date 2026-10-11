@@ -524,7 +524,7 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '18';
+  var APP_VERSION = '19';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
@@ -1103,7 +1103,33 @@
     }
   }
 
+  // Memulihkan identitas (Mapel/Guru) bila hilang dari perangkat ini:
+  // 1) dari link (?m=...&g=...), 2) dari riwayat bila hanya ada satu.
+  function restoreIdentityIfMissing(){
+    try{
+      var qs = new URLSearchParams(location.search);
+      var m = (qs.get('m') || '').trim(), g = (qs.get('g') || '').trim();
+      if(m || g){
+        if(normalizeKeyPart_(m) !== normalizeKeyPart_(state.sheetsMapel) || normalizeKeyPart_(g) !== normalizeKeyPart_(state.sheetsGuru)){
+          state.sheetsMapel = m || null; state.sheetsGuru = g || null;
+          saveIdentityToHistory(m, g);
+          storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+        }
+        return;
+      }
+      if(!sheetsKeyOf()){
+        var h = loadIdentityHistory();
+        if(h.length === 1){
+          state.sheetsMapel = h[0].mapel || null; state.sheetsGuru = h[0].guru || null;
+          storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+        }
+      }
+    }catch(e){ console.error('Gagal pulihkan identitas', e); }
+  }
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+
   function trySyncFromSheetsAfterBoot(){
+    restoreIdentityIfMissing();
     if(!sheetsUrlOf()) { refreshSyncBadge(); return; }
     var mySeq = ++syncSeq;
     var key = sheetsKeyOf();
@@ -1397,6 +1423,7 @@
       html += '<input type="text" id="coverMapelInput" placeholder="Nama Mapel (mis. Matematika)">'+
         '<input type="text" id="coverGuruInput" placeholder="Guru / Kelas (mis. Pak Budi - 7A)">'+
         '<button class="cover-identity-apply" id="coverIdentityApplyBtn">✓ Terapkan</button>'+
+        (sheetsKeyOf() ? '<button class="identity-chip" id="coverCopyLinkBtn" style="margin-top:8px;">🔗 Salin link dengan identitas ini</button>' : '')+
         (!sheetsUrlOf() ? '<div class="cover-identity-hint">Belum tersambung ke Google Sheets — isian ini akan tersimpan lokal dulu, dan otomatis dipakai begitu kamu sambungkan lewat ⚙.</div>' : '')+
         '</div>';
       return html;
@@ -2585,6 +2612,13 @@
     if(e.target && e.target.id === 'openBookBtn'){ goJadwal(); return; }
     if(e.target && e.target.id === 'coverIdentityBadge'){ coverIdentityEditing = true; renderAll(); return; }
     if(e.target && e.target.id === 'coverIdentityApplyBtn'){ applyMapelGuruFromCover(); return; }
+    if(e.target && e.target.id === 'coverCopyLinkBtn'){
+      var link = location.origin + location.pathname + '?m=' + encodeURIComponent((state.sheetsMapel||'').trim()) + '&g=' + encodeURIComponent((state.sheetsGuru||'').trim());
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(link).then(function(){ alert('Link disalin. Buka link ini di perangkat mana pun untuk langsung memakai identitas yang sama.'); }, function(){ prompt('Salin link ini:', link); });
+      } else { prompt('Salin link ini:', link); }
+      return;
+    }
     if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-select-identity')){
       selectIdentityFromHistory(parseInt(e.target.getAttribute('data-select-identity'), 10));
       return;
