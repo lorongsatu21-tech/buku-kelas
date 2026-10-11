@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewer-fit=cover">
-<title>Buku Kelas</title>
+<title>Buku Kelas Guru</title>
 
 <!-- Home-screen / app-like presentation -->
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Buku Kelas">
-<meta name="theme-color" content="#33201B">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2333201B'/%3E%3Crect x='24' y='20' width='52' height='62' rx='3' fill='%23F7F2E7'/%3E%3Crect x='24' y='20' width='10' height='62' rx='2' fill='%238B2E3C'/%3E%3Cline x1='42' y1='34' x2='68' y2='34' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='45' x2='68' y2='45' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='56' x2='60' y2='56' stroke='%2333201B' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="apple-mobile-web-app-title" content="Buku Kelas Guru">
+<meta name="theme-color" content="#173A63">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23173A63'/%3E%3Crect x='24' y='20' width='52' height='62' rx='3' fill='%23F7F2E7'/%3E%3Crect x='24' y='20' width='10' height='62' rx='2' fill='%238B2E3C'/%3E%3Cline x1='42' y1='34' x2='68' y2='34' stroke='%23173A63' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='45' x2='68' y2='45' stroke='%23173A63' stroke-width='3' stroke-linecap='round'/%3E%3Cline x1='42' y1='56' x2='60' y2='56' stroke='%23173A63' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 
@@ -38,8 +38,8 @@
     --blue-bg:#E1EBF0;
     --red:#B23A3A;
     --red-bg:#F5E0DE;
-    --cover-bg:#33201B;
-    --cover-bg2:#472C24;
+    --cover-bg:#173A63;
+    --cover-bg2:#1F4A7A;
     --gold:#CBA45B;
     --radius:12px;
     --shadow:0 1px 2px rgba(36,43,34,0.06), 0 6px 16px -8px rgba(36,43,34,0.22);
@@ -200,10 +200,10 @@
   }
   .subnav button.active{ background:var(--ink-strong); color:var(--paper-raised); }
 
-  input[type=text], input[type=number], input[type=date]{
+  input[type=text], input[type=number], input[type=date], input[type=time]{
     font-family:'IBM Plex Sans', sans-serif; font-size:14.5px;
     border:1px solid var(--line-strong); border-radius:8px; padding:9px 10px;
-    background:#fff; color:var(--ink-strong);
+    background:#fff; color:var(--ink-strong); box-sizing:border-box;
   }
   input[type=number]{ font-family:'IBM Plex Mono', monospace; width:60px; text-align:center; }
   input:focus, button:focus{ outline:2px solid var(--accent); outline-offset:1px; }
@@ -231,6 +231,23 @@
   .import-status.err{ background:var(--red-bg); color:var(--red); }
 
   .roster-list{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .jadwal-list{ display:flex; flex-direction:column; gap:1px; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .jadwal-row{
+    display:flex; align-items:center; gap:8px; padding:4px 10px; background:var(--paper-raised);
+    border-bottom:1px solid var(--line);
+  }
+  .jadwal-row:last-child{ border-bottom:none; }
+  .jadwal-row .jadwal-jamke{
+    font-size:12px; font-weight:600; color:var(--ink-soft); flex:none; white-space:nowrap;
+  }
+  .jadwal-row .jadwal-time{
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12px; color:var(--accent); flex:none;
+    background:rgba(139,46,60,0.12); padding:3px 8px; border-radius:20px; white-space:nowrap;
+  }
+  .jadwal-row .jadwal-class{
+    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:26px; font-weight:700; color:var(--ink-strong); font-family:'Zilla Slab',serif;
+  }
   .roster-linked-note{
     background:var(--blue-bg); color:var(--blue); font-size:12px; padding:10px 12px;
     border-radius:9px; margin-bottom:14px; line-height:1.4;
@@ -239,6 +256,7 @@
     border:1px solid var(--line-strong); border-radius:10px; padding:12px; margin-bottom:12px; background:var(--paper-raised);
   }
   .roster-class-head{ display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .roster-toggle-btn{ font-size:12px; padding:2px 4px; flex:none; }
   .roster-class-name{ font-family:'Zilla Slab',serif; font-weight:600; font-size:14.5px; flex:1; min-width:0; }
   .roster-class-count{ font-size:11px; color:var(--ink-soft); flex:none; }
   .roster-row{ display:flex; align-items:center; gap:8px; padding:11px 12px; background:var(--paper-raised); border-bottom:1px solid var(--line); }
@@ -308,6 +326,10 @@
   table.recap th, table.recap td{ border:1px solid var(--line); padding:7px 8px; text-align:center; }
   table.recap th{ background:var(--paper); font-weight:600; color:var(--ink-soft); font-size:10.5px; text-transform:uppercase; }
   table.recap td:first-child, table.recap th:first-child{ text-align:left; }
+  table.recap td.recap-h{ background:rgba(63,125,88,0.14); font-weight:600; }
+  table.recap td.recap-s{ background:rgba(185,134,42,0.14); font-weight:600; }
+  table.recap td.recap-i{ background:rgba(46,107,139,0.14); font-weight:600; }
+  table.recap td.recap-a{ background:rgba(178,58,58,0.14); font-weight:600; }
 
   .finish-attend-btn{
     margin-top:22px; width:100%; display:flex; align-items:center; justify-content:center; gap:9px;
@@ -394,11 +416,44 @@
   .cover-sync-badge.ok .dot{ background:var(--green); }
   .cover-sync-badge.error .dot{ background:var(--red); }
   .cover-sync-badge.syncing .dot{ background:var(--gold); }
+  /* ---------------- Cetak / PDF ---------------- */
+  #printArea{ display:none; --print-font-size:11pt; }
+  @media print{
+    @page{ size: A4 portrait; margin: 10mm; }
+    html, body{ margin:0 !important; padding:0 !important; height:auto !important; }
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{
+      display:block !important; position:absolute; left:0; top:0; width:100%;
+      font-family:'IBM Plex Sans', sans-serif; color:#111;
+      page-break-after:avoid; page-break-inside:avoid;
+    }
+    .print-head{ margin-bottom:8px; page-break-after:avoid; }
+    .print-head h1{ font-family:'Zilla Slab',serif; font-size:16px; margin:0 0 3px; }
+    .print-head p{ font-size:10px; color:#444; margin:0; }
+    table.print-table{
+      width:100%; border-collapse:collapse; table-layout:auto;
+      font-size:var(--print-font-size, 11pt);
+      page-break-inside:avoid; page-break-after:avoid;
+    }
+    table.print-table tr{ page-break-inside:avoid; }
+    table.print-table{ table-layout:fixed; }
+    table.print-table th, table.print-table td{
+      border:1px solid #999; text-align:center;
+      padding:calc(var(--print-font-size, 11pt) * 0.28) calc(var(--print-font-size, 11pt) * 0.3);
+      overflow-wrap:break-word; word-break:break-word;
+    }
+    table.print-table th{ background:#eee; font-weight:700; }
+    table.print-table td:nth-child(1), table.print-table th:nth-child(1){ width:4%; }
+    table.print-table td:nth-child(2), table.print-table th:nth-child(2){ width:20%; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app-shell" id="appShell"></div>
+
+<div id="printArea"></div>
 
 <div class="sheet-backdrop" id="settingsSheetBackdrop">
   <div class="sheet">
@@ -457,7 +512,7 @@
   // 1) URL Web App Google Apps Script kamu. Kalau diisi, setiap perangkat
   //    BARU yang buka link ini akan otomatis tersambung — guru tidak perlu
   //    buka menu pengaturan sama sekali, cukup isi Mapel/Guru di Sampul.
-  var DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxlbhhlh08gVyhxvfC4B5rsBMpJu-rnW9VbAvSqaUQVT9hTxGXb5vMvpUbSpLXWOt-I/exec';
+  var DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxOxSH8J8HHbgqj8iYIb3WMCgtAT0-PP0fx4wSFIYz7a0mEted0INHoFoeq75WXG4p5/exec';
 
   // 1b) Kata sandi rahasia — HARUS sama persis dengan APP_SECRET di kode
   //     Apps Script (.gs) kamu. Ini bukan pengaman total (kode ini tetap
@@ -469,11 +524,11 @@
   //    mengunggah ulang index.html dengan pembaruan, DAN ubah juga angka
   //    yang sama di file version.json. Begitu keduanya diunggah, HP guru
   //    yang online akan otomatis memuat ulang ke versi terbaru ini sendiri.
-  var APP_VERSION = '11';
+  var APP_VERSION = '18';
   // ============================================================
 
   var PALETTE = ['#8B2E3C','#2E6B8B','#3F7D58','#B9862A','#5C4A8B','#2E8B7E','#A14E9A','#4A6B2E'];
-  var STORAGE_KEY = 'buku-kelas-data-v1';
+  var STORAGE_KEY = 'buku-kelas-guru-data-v1';
 
   function uid(){ return Math.random().toString(36).slice(2,10); }
   function todayISO(){ var d=new Date(); return d.toISOString().slice(0,10); }
@@ -509,10 +564,11 @@
   function defaultState(){
     return {
       classes: [], // kosong secara default — kelas ditambahkan lewat "+ Tambah Kelas" (pilih dari Data Induk, atau buat kelas lokal sendiri)
+      jadwal: [], // jadwal mengajar pribadi guru — {id, day, startTime, endTime, className}
       weights: { harian: 20, tugas: 20, uts: 25, uas: 35 },
       selectedClassId: null,
       tab: 'siswa',
-      screen: 'cover', // cover | toc | class
+      screen: 'cover', // cover | jadwal | toc | class
       sheetsUrl: null,
       sheetsKey: null,
       sheetsMapel: null,
@@ -561,6 +617,8 @@
     });
   }
 
+  var syncedKey = null; // key yang sudah berhasil DITARIK dari Sheets di sesi ini; push hanya boleh setelah itu
+  var lastPullAt = 0;
   var lastSaveOk = true;
   function save(){
     try{
@@ -572,7 +630,7 @@
         lastSaveOk = false;
         renderAll();
       });
-      if(sheetsUrlOf()){
+      if(sheetsUrlOf() && sheetsKeyOf() && syncedKey === sheetsKeyOf()){
         pushToSheets(json).then(refreshSyncBadge);
       }
     }catch(e){ console.error('Storage error', e); lastSaveOk = false; }
@@ -604,6 +662,7 @@
         // supaya guru tidak perlu buka menu pengaturan sendiri.
         applyDefaultSheetsUrlIfFresh();
       }
+      applyDefaultSheetsUrlIfFresh();
       renderAll();
       trySyncFromSheetsAfterBoot();
       checkForUpdate();
@@ -616,7 +675,7 @@
   }
 
   function applyDefaultSheetsUrlIfFresh(){
-    if(DEFAULT_SHEETS_URL && DEFAULT_SHEETS_URL.indexOf('https://') === 0){
+    if(!sheetsUrlOf() && DEFAULT_SHEETS_URL && DEFAULT_SHEETS_URL.indexOf('https://') === 0){
       state.sheetsUrl = DEFAULT_SHEETS_URL;
     }
   }
@@ -638,6 +697,7 @@
   function applyLoadedState(parsed){
     state = parsed;
     if(!state.weights) state.weights = { harian:20, tugas:20, uts:25, uas:35 };
+    if(!Array.isArray(state.jadwal)) state.jadwal = [];
     if(state.sheetsUrl === undefined) state.sheetsUrl = null;
     if(state.sheetsKey === undefined) state.sheetsKey = null;
     if(state.sheetsMapel === undefined) state.sheetsMapel = null;
@@ -885,6 +945,8 @@
     badge.textContent = text;
   }
 
+  var rosterCollapsedIds = {};
+
   function renderRosterManagerContent(){
     var html = '<div class="sheet-handle"></div><h3>📋 Data Induk Siswa</h3>';
     html += '<p class="hint">Perubahan di sini otomatis terlihat semua guru yang memilih kelas ini. Guru sendiri tidak bisa menambah/menghapus siswa.</p>';
@@ -893,32 +955,36 @@
       html += '<div class="empty" style="padding:20px 0;"><b>Belum ada kelas</b>Tambahkan kelas pertama di bawah.</div>';
     } else {
       masterRoster.classes.forEach(function(rc){
+        var collapsed = !!rosterCollapsedIds[rc.id];
         html += '<div class="roster-class-card">';
         html += '<div class="roster-class-head">'+
+          '<button class="icon-btn roster-toggle-btn" data-toggle-roster-class="'+rc.id+'" title="'+(collapsed?'Perluas':'Ciutkan')+'">'+(collapsed?'▸':'▾')+'</button>'+
           '<span class="topbar-dot" style="background:'+rc.color+'"></span>'+
           '<span class="roster-class-name">'+escapeHtml(rc.name)+'</span>'+
           '<span class="roster-class-count">'+(rc.students||[]).length+' siswa</span>'+
           '<button class="icon-btn" data-del-roster-class="'+rc.id+'" title="Hapus kelas">✕</button>'+
           '</div>';
-        html += '<div class="roster-add" style="margin:8px 0;">'+
-          '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
-          '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
-          '</div>';
-        html += '<div class="import-row" style="margin:0 0 10px;">'+
-          '<label class="btn-import" for="rosterImportInput_'+rc.id+'">⇪ Import dari Excel</label>'+
-          '<input type="file" id="rosterImportInput_'+rc.id+'" data-roster-import="'+rc.id+'" accept=".xlsx,.xls,.csv">'+
-          '<span class="import-hint">Kolom pertama / kolom "Nama" akan dibaca.</span>'+
-          '</div>';
-        if((rc.students||[]).length > 0){
-          html += '<div class="roster-list">';
-          rc.students.forEach(function(s, si){
-            html += '<div class="roster-row">'+
-              '<span class="num">'+(si+1)+'.</span>'+
-              '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
-              '<button class="icon-btn" data-del-roster-student="'+rc.id+'|'+s.id+'" title="Hapus siswa">✕</button>'+
-              '</div>';
-          });
-          html += '</div>';
+        if(!collapsed){
+          html += '<div class="roster-add" style="margin:8px 0;">'+
+            '<input type="text" id="newStudentInput_'+rc.id+'" placeholder="Nama siswa baru…">'+
+            '<button class="btn btn-primary" data-add-roster-student="'+rc.id+'">+</button>'+
+            '</div>';
+          html += '<div class="import-row" style="margin:0 0 10px;">'+
+            '<label class="btn-import" for="rosterImportInput_'+rc.id+'">⇪ Import dari Excel</label>'+
+            '<input type="file" id="rosterImportInput_'+rc.id+'" data-roster-import="'+rc.id+'" accept=".xlsx,.xls,.csv">'+
+            '<span class="import-hint">Kolom pertama / kolom "Nama" akan dibaca.</span>'+
+            '</div>';
+          if((rc.students||[]).length > 0){
+            html += '<div class="roster-list">';
+            rc.students.forEach(function(s, si){
+              html += '<div class="roster-row">'+
+                '<span class="num">'+(si+1)+'.</span>'+
+                '<span style="flex:1;font-size:13.5px;min-width:0;">'+escapeHtml(s.name)+'</span>'+
+                '<button class="icon-btn" data-del-roster-student="'+rc.id+'|'+s.id+'" title="Hapus siswa">✕</button>'+
+                '</div>';
+            });
+            html += '</div>';
+          }
         }
         html += '</div>';
       });
@@ -938,6 +1004,13 @@
 
   function bindRosterManagerEvents(){
     document.getElementById('rosterCloseBtn').addEventListener('click', closeRosterManager);
+    document.querySelectorAll('[data-toggle-roster-class]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-toggle-roster-class');
+        rosterCollapsedIds[id] = !rosterCollapsedIds[id];
+        renderRosterManagerContent();
+      });
+    });
     document.getElementById('addRosterClassBtn').addEventListener('click', function(){
       var input = document.getElementById('newRosterClassName');
       var name = input.value.trim();
@@ -1017,6 +1090,7 @@
     var keepPassword = state.sheetsLockPassword;
     state = remote;
     if(!state.weights) state.weights = { harian:20, tugas:20, uts:25, uas:35 };
+    if(!Array.isArray(state.jadwal)) state.jadwal = [];
     state.sheetsUrl = keepUrl;
     state.sheetsKey = keepKey;
     state.sheetsMapel = keepMapel;
@@ -1032,11 +1106,14 @@
   function trySyncFromSheetsAfterBoot(){
     if(!sheetsUrlOf()) { refreshSyncBadge(); return; }
     var mySeq = ++syncSeq;
-    fetchFromSheets().then(function(text){
+    var key = sheetsKeyOf();
+    var privatePull = key ? fetchFromSheets() : Promise.resolve(undefined);
+    privatePull.then(function(text){
       if(mySeq !== syncSeq){ return; } // ada percobaan lebih baru, abaikan hasil basi ini
       if(text){
         try{
           var remote = JSON.parse(text);
+          syncedKey = key; lastPullAt = Date.now(); // berhasil menarik: aman untuk push berikutnya
           if(remote && remote.classes && remote.classes.length){
             applyRemoteData(remote);
             storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
@@ -1050,6 +1127,14 @@
       });
     });
   }
+
+  // Saat aplikasi dibuka kembali / kembali ke layar depan, tarik ulang data
+  // terbaru dari Sheets (mis. setelah diubah dari perangkat lain).
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState === 'visible' && state.screen === 'cover' && Date.now() - lastPullAt > 30000){
+      trySyncFromSheetsAfterBoot();
+    }
+  });
 
   function refreshSyncBadge(){
     var badge = document.getElementById('sheetsBadge');
@@ -1133,8 +1218,14 @@
   /* ---------------- Navigation ---------------- */
 
   function goCover(){ state.screen='cover'; renderAll(); }
+  function goJadwal(){ state.screen='jadwal'; renderAll(); }
   function goTOC(){ state.screen='toc'; renderAll(); }
-  function goClass(id){ state.selectedClassId=id; state.screen='class'; state.tab='siswa'; renderAll(); }
+  function goClass(id){
+    state.selectedClassId=id; state.screen='class';
+    var cls = getClass(id);
+    state.tab = (cls && cls.rosterId) ? 'hadir' : 'siswa';
+    renderAll();
+  }
 
   var settingsUnlockedThisSession = false;
 
@@ -1156,12 +1247,14 @@
 
   function renderAll(){
     var root = document.getElementById('appShell');
-    if(state.screen === 'toc') root.innerHTML = tocHTML();
+    if(state.screen === 'jadwal') root.innerHTML = jadwalHTML();
+    else if(state.screen === 'toc') root.innerHTML = tocHTML();
     else if(state.screen === 'class' && getClass(state.selectedClassId)) root.innerHTML = classHTML(getClass(state.selectedClassId));
     else { state.screen = 'cover'; root.innerHTML = coverHTML(); }
 
     bindGlobalHandlers();
-    if(state.screen==='toc') bindTOC();
+    if(state.screen==='jadwal') bindJadwal();
+    else if(state.screen==='toc') bindTOC();
     else if(state.screen==='class') bindClass(getClass(state.selectedClassId));
     refreshSyncBadge();
   }
@@ -1237,6 +1330,7 @@
       if(text){
         try{
           var remote = JSON.parse(text);
+          syncedKey = sheetsKeyOf(); lastPullAt = Date.now();
           if(remote && remote.classes && remote.classes.length){
             applyRemoteData(remote);
             storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
@@ -1263,7 +1357,7 @@
   /* ---------------- Screen: Cover (Sampul) ---------------- */
 
   var coverIdentityEditing = false;
-  var IDENTITY_HISTORY_KEY = 'buku-kelas-identities-v1';
+  var IDENTITY_HISTORY_KEY = 'buku-kelas-guru-identities-v1';
 
   function loadIdentityHistory(){
     try{
@@ -1332,8 +1426,17 @@
         if(text){
           try{
             var remote = JSON.parse(text);
+            syncedKey = sheetsKeyOf(); lastPullAt = Date.now();
             if(remote && remote.classes && remote.classes.length){
               applyRemoteData(remote);
+              storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
+            } else {
+              // Identitas baru tanpa data di Sheets: mulai kosong, jangan
+              // membawa data identitas sebelumnya ke key yang baru.
+              var keep = { u:state.sheetsUrl, p:state.sheetsLockPassword, m:state.sheetsMapel, g:state.sheetsGuru, k:state.sheetsKey };
+              state = defaultState();
+              state.sheetsUrl = keep.u; state.sheetsLockPassword = keep.p; state.sheetsMapel = keep.m; state.sheetsGuru = keep.g; state.sheetsKey = keep.k;
+              mergeRosterIntoClasses();
               storageSet(STORAGE_KEY, JSON.stringify(state)).catch(function(){});
             }
           }catch(e){ /* mapel baru / sheet kosong — dibiarkan kosong, TIDAK otomatis push data lokal */ }
@@ -1381,12 +1484,12 @@
         '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'+
           '<rect x="22" y="18" width="56" height="66" rx="3" fill="#F7F2E7"/>'+
           '<rect x="22" y="18" width="11" height="66" rx="2" fill="#8B2E3C"/>'+
-          '<line x1="42" y1="34" x2="70" y2="34" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
-          '<line x1="42" y1="46" x2="70" y2="46" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
-          '<line x1="42" y1="58" x2="62" y2="58" stroke="#33201B" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="34" x2="70" y2="34" stroke="#173A63" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="46" x2="70" y2="46" stroke="#173A63" stroke-width="3.5" stroke-linecap="round"/>'+
+          '<line x1="42" y1="58" x2="62" y2="58" stroke="#173A63" stroke-width="3.5" stroke-linecap="round"/>'+
         '</svg>'+
       '</div>'+
-      '<h1 class="cover-title">Buku Kelas</h1>'+
+      '<h1 class="cover-title">Buku Kelas Guru</h1>'+
       '<p class="cover-sub">Daftar hadir &amp; nilai siswa</p>'+
       coverIdentityHTML()+
       '<div class="cover-stats">'+
@@ -1397,6 +1500,89 @@
       '<div class="cover-sync-badge" id="coverSyncBadge" style="display:none;"></div>'+
       '<div class="cover-date">'+tanggal+'</div>'+
     '</div>';
+  }
+
+  /* ---------------- Screen: Jadwal Mengajar ---------------- */
+
+  var DAY_ORDER = ['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu'];
+
+  function jadwalHTML(){
+    var html = '<div class="screen screen-toc">';
+    html += '<div class="topbar"><button class="back-btn" data-go-back="cover">← Sampul</button>'+
+      '<span class="topbar-title">Jadwal Mengajar</span>'+
+      '<button class="topbar-action" data-open-settings>⚙</button></div>';
+    html += '<div class="screen-body">';
+
+    html += '<div style="margin-bottom:18px;">'+
+      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Hari</label>'+
+      '<select id="jadwalDay" style="width:100%;margin-bottom:10px;padding:9px 10px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;font-size:14.5px;">'+
+        DAY_ORDER.map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('')+
+      '</select>'+
+      '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+        '<div style="flex:0 0 72px;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Ke</label>'+
+          '<input type="number" min="1" id="jadwalJamKe" style="width:100%;"></div>'+
+        '<div style="flex:1;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Mulai</label>'+
+          '<input type="time" id="jadwalStart" style="width:100%;"></div>'+
+        '<div style="flex:1;"><label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Jam Selesai</label>'+
+          '<input type="time" id="jadwalEnd" style="width:100%;"></div>'+
+      '</div>'+
+      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Kelas / Mapel</label>'+
+      '<input type="text" id="jadwalClassName" placeholder="Contoh: 8B" style="width:100%;margin-bottom:10px;">'+
+      '<button class="btn btn-primary btn-block" id="addJadwalBtn">+ Tambah Jadwal</button>'+
+      '</div>';
+
+    var hasAny = state.jadwal.length > 0;
+    if(!hasAny){
+      html += '<div class="empty"><b>Belum ada jadwal</b>Tambahkan jadwal mengajar kamu di atas.</div>';
+    } else {
+      DAY_ORDER.forEach(function(day){
+        var entries = state.jadwal.filter(function(j){ return j.day===day; })
+          .sort(function(a,b){ return (a.startTime||'').localeCompare(b.startTime||''); });
+        if(entries.length===0) return;
+        html += '<h3 class="recap-title" style="margin-top:14px;">'+day+'</h3>';
+        html += '<div class="jadwal-list">';
+        entries.forEach(function(j){
+          html += '<div class="jadwal-row">'+
+            (j.jamKe ? '<span class="jadwal-jamke">Jam ke '+escapeHtml(String(j.jamKe))+'</span>' : '')+
+            '<span class="jadwal-time">'+(j.startTime||'--:--')+'-'+(j.endTime||'--:--')+'</span>'+
+            '<span class="jadwal-class">'+escapeHtml(j.className||'')+'</span>'+
+            '<button class="icon-btn" data-del-jadwal="'+j.id+'" title="Hapus">✕</button>'+
+            '</div>';
+        });
+        html += '</div>';
+      });
+    }
+
+    html += '<button class="open-book-btn" id="goTocFromJadwalBtn" style="width:100%;margin-top:22px;">📖 Lanjut ke Daftar Isi <span>→</span></button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function bindJadwal(){
+    document.getElementById('addJadwalBtn').addEventListener('click', function(){
+      var day = document.getElementById('jadwalDay').value;
+      var jamKe = document.getElementById('jadwalJamKe').value.trim();
+      var start = document.getElementById('jadwalStart').value;
+      var end = document.getElementById('jadwalEnd').value;
+      var className = document.getElementById('jadwalClassName').value.trim();
+      if(!className){ alert('Isi dulu Kelas/Mapelnya.'); return; }
+      if(!Array.isArray(state.jadwal)) state.jadwal = [];
+      state.jadwal.push({ id: uid(), day: day, jamKe: jamKe, startTime: start, endTime: end, className: className });
+      scheduleSave();
+      renderAll();
+    });
+    document.querySelectorAll('[data-del-jadwal]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-del-jadwal');
+        if(confirm('Hapus jadwal ini?')){
+          state.jadwal = state.jadwal.filter(function(j){ return j.id!==id; });
+          scheduleSave();
+          renderAll();
+        }
+      });
+    });
+    var goTocBtn = document.getElementById('goTocFromJadwalBtn');
+    if(goTocBtn) goTocBtn.addEventListener('click', goTOC);
   }
 
   /* ---------------- Screen: Daftar Isi (TOC) ---------------- */
@@ -1468,13 +1654,25 @@
       });
       html += '</div>';
     } else if(masterRoster.classes.length === 0){
-      html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa, atau buat kelas lokal sendiri di bawah (tidak akan otomatis terisi siswa).</p>';
+      if(rosterStatus === 'error'){
+        html += '<p class="hint">⚠ Gagal mengambil Data Induk Siswa dari Google Sheets (bukan berarti kosong — cuma gagal diambil). Coba tap "Coba lagi" di bawah, atau tutup-buka aplikasi lagi.</p>';
+        html += '<button class="sheet-btn" id="retryRosterBtn"><span class="ico">🔄</span> Coba lagi</button>';
+      } else {
+        html += '<p class="hint">Data Induk Siswa belum diisi admin. Hubungi admin untuk menambahkan kelas &amp; siswa dulu sebelum kelas bisa dipilih di sini.</p>';
+      }
     } else {
       html += '<p class="hint">Semua kelas di Data Induk Siswa sudah kamu tambahkan.</p>';
     }
-    html += '<button class="sheet-btn" id="createLocalClassBtn" style="margin-top:10px;"><span class="ico">✏️</span> Buat kelas lokal sendiri</button>';
     html += '<button class="sheet-close" id="classPickerCloseBtn">Tutup</button>';
     document.getElementById('classPickerContent').innerHTML = html;
+
+    var retryBtn = document.getElementById('retryRosterBtn');
+    if(retryBtn){
+      retryBtn.addEventListener('click', function(){
+        retryBtn.textContent = 'Mengambil data…';
+        loadRosterAndMerge().then(function(){ openClassPicker(); });
+      });
+    }
 
     document.querySelectorAll('[data-join-roster-class]').forEach(function(btn){
       btn.addEventListener('click', function(){
@@ -1489,16 +1687,6 @@
         closeClassPicker();
         renderAll();
       });
-    });
-    document.getElementById('createLocalClassBtn').addEventListener('click', function(){
-      var name = prompt('Nama kelas baru:', 'Kelas '+(state.classes.length+1));
-      if(!name) return;
-      var color = PALETTE[state.classes.length % PALETTE.length];
-      var c = defaultClass(name.trim(), color);
-      state.classes.push(c);
-      scheduleSave();
-      closeClassPicker();
-      renderAll();
     });
     document.getElementById('classPickerCloseBtn').addEventListener('click', closeClassPicker);
 
@@ -1518,7 +1706,7 @@
       '<button class="topbar-action" data-open-settings>⚙</button></div>';
     html += '<div class="screen-body">';
     html += '<div class="subnav">'+
-      '<button data-tab="siswa" class="'+(state.tab==='siswa'?'active':'')+'">Siswa</button>'+
+      (!cls.rosterId ? '<button data-tab="siswa" class="'+(state.tab==='siswa'?'active':'')+'">Siswa</button>' : '')+
       '<button data-tab="hadir" class="'+(state.tab==='hadir'?'active':'')+'">Hadir</button>'+
       '<button data-tab="rekap" class="'+(state.tab==='rekap'?'active':'')+'">Rekap</button>'+
       '<button data-tab="nilai" class="'+(state.tab==='nilai'?'active':'')+'">Nilai</button>'+
@@ -1532,6 +1720,7 @@
 
   function bindClass(cls){
     ensureClassExtras(cls);
+    if(cls.rosterId && state.tab==='siswa'){ state.tab = 'hadir'; } // tab Siswa tidak ada utk kelas terhubung Data Induk
     document.querySelectorAll('.subnav button').forEach(function(btn){
       btn.addEventListener('click', function(){
         state.tab = btn.getAttribute('data-tab');
@@ -1539,7 +1728,7 @@
       });
     });
     var content = document.getElementById('tabContent');
-    if(state.tab==='siswa') renderSiswaTab(content, cls);
+    if(state.tab==='siswa' && !cls.rosterId) renderSiswaTab(content, cls);
     else if(state.tab==='hadir') renderHadirTab(content, cls);
     else if(state.tab==='rekap') renderRekapTab(content, cls);
     else if(state.tab==='materi') renderMateriTab(content, cls);
@@ -1922,10 +2111,12 @@
       '<div style="display:flex;gap:6px;flex:none;">'+
         '<button class="icon-btn" id="prevMonthBtn" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">‹</button>'+
         '<button class="icon-btn" id="nextMonthBtn" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">›</button>'+
+        '<button class="icon-btn" id="printRekapBtn" title="Cetak / Simpan PDF" style="border:1px solid var(--line-strong);border-radius:6px;padding:5px 11px;">🖨️</button>'+
       '</div></div>';
 
     html += '<div class="table-wrap"><table class="recap"><thead><tr><th>Nama</th><th>H</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead><tbody>';
     var totals = {H:0,S:0,I:0,A:0};
+    function cellClass(n, code){ return n>0 ? ' class="recap-'+code+'"' : ''; }
     cls.students.forEach(function(s){
       var counts = {H:0,S:0,I:0,A:0};
       Object.keys(cls.attendance).forEach(function(d){
@@ -1933,11 +2124,21 @@
       });
       var total = counts.H+counts.S+counts.I+counts.A;
       var pct = total>0 ? Math.round((counts.H/total)*100) : 0;
-      html += '<tr><td>'+escapeHtml(s.name)+'</td><td>'+counts.H+'</td><td>'+counts.S+'</td><td>'+counts.I+'</td><td>'+counts.A+'</td><td>'+(total>0?pct+'%':'—')+'</td></tr>';
+      html += '<tr><td>'+escapeHtml(s.name)+'</td>'+
+        '<td'+cellClass(counts.H,'h')+'>'+counts.H+'</td>'+
+        '<td'+cellClass(counts.S,'s')+'>'+counts.S+'</td>'+
+        '<td'+cellClass(counts.I,'i')+'>'+counts.I+'</td>'+
+        '<td'+cellClass(counts.A,'a')+'>'+counts.A+'</td>'+
+        '<td>'+(total>0?pct+'%':'—')+'</td></tr>';
     });
     var totalAll = totals.H+totals.S+totals.I+totals.A;
     var totalPct = totalAll>0 ? Math.round((totals.H/totalAll)*100) : 0;
-    html += '<tr style="font-weight:700;background:var(--paper);"><td>Total</td><td>'+totals.H+'</td><td>'+totals.S+'</td><td>'+totals.I+'</td><td>'+totals.A+'</td><td>'+(totalAll>0?totalPct+'%':'—')+'</td></tr>';
+    html += '<tr style="font-weight:700;background:var(--paper);"><td>Total</td>'+
+      '<td'+cellClass(totals.H,'h')+'>'+totals.H+'</td>'+
+      '<td'+cellClass(totals.S,'s')+'>'+totals.S+'</td>'+
+      '<td'+cellClass(totals.I,'i')+'>'+totals.I+'</td>'+
+      '<td'+cellClass(totals.A,'a')+'>'+totals.A+'</td>'+
+      '<td>'+(totalAll>0?totalPct+'%':'—')+'</td></tr>';
     html += '</tbody></table></div>';
 
     root.innerHTML = html;
@@ -1951,6 +2152,9 @@
       root.setAttribute('data-recap-month', shiftMonth(month, 1));
       renderRekapTab(root, cls);
     });
+    document.getElementById('printRekapBtn').addEventListener('click', function(){
+      printRekap(cls, month, monthLabel);
+    });
   }
 
   /* ---------------- Tab: Materi (Batasan Materi Pelajaran) ---------------- */
@@ -1961,8 +2165,12 @@
     html += '<div style="margin-bottom:16px;">'+
       '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Tanggal</label>'+
       '<input type="date" id="materiDate" value="'+todayISO()+'" style="width:100%;margin-bottom:10px;">'+
-      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Materi / Pokok Bahasan</label>'+
-      '<input type="text" id="materiTopic" placeholder="Contoh: Bab 3 — Pecahan Campuran" style="width:100%;margin-bottom:10px;">'+
+      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Materi</label>'+
+      '<input type="text" id="materiName" placeholder="Contoh: Bab 3 — Pecahan" style="width:100%;margin-bottom:10px;">'+
+      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Pokok Bahasan</label>'+
+      '<input type="text" id="materiPokokBahasan" placeholder="Contoh: Pecahan Campuran" style="width:100%;margin-bottom:10px;">'+
+      '<label style="font-size:11.5px;color:var(--ink-soft);display:block;margin-bottom:4px;">Materi Selanjutnya</label>'+
+      '<input type="text" id="materiSelanjutnya" placeholder="Contoh: Bab 4 — Perbandingan" style="width:100%;margin-bottom:10px;">'+
       '<button class="btn btn-primary btn-block" id="addMateriBtn">+ Tambah Batasan Materi</button>'+
       '</div>';
 
@@ -1975,7 +2183,9 @@
         html += '<div class="roster-row" style="align-items:flex-start;">'+
           '<div style="flex:1;min-width:0;">'+
             '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;color:var(--ink-soft);margin-bottom:3px;">'+formatDateID(m.date)+'</div>'+
-            '<div style="font-size:13.5px;color:var(--ink-strong);">'+escapeHtml(m.topic)+'</div>'+
+            '<div style="font-size:13.5px;color:var(--ink-strong);"><b>Materi:</b> '+escapeHtml(m.materi||m.topic||'')+'</div>'+
+            (m.pokokBahasan ? '<div style="font-size:12.5px;color:var(--ink-strong);margin-top:2px;"><b>Pokok Bahasan:</b> '+escapeHtml(m.pokokBahasan)+'</div>' : '')+
+            (m.materiSelanjutnya ? '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;"><b>Selanjutnya:</b> '+escapeHtml(m.materiSelanjutnya)+'</div>' : '')+
           '</div>'+
           '<button class="icon-btn" data-del-materi="'+m.id+'" title="Hapus">✕</button>'+
           '</div>';
@@ -1986,9 +2196,11 @@
 
     document.getElementById('addMateriBtn').addEventListener('click', function(){
       var date = document.getElementById('materiDate').value || todayISO();
-      var topic = document.getElementById('materiTopic').value.trim();
-      if(!topic){ alert('Isi dulu materi / pokok bahasannya.'); return; }
-      cls.materi.push({ id: uid(), date: date, topic: topic });
+      var materi = document.getElementById('materiName').value.trim();
+      var pokokBahasan = document.getElementById('materiPokokBahasan').value.trim();
+      var materiSelanjutnya = document.getElementById('materiSelanjutnya').value.trim();
+      if(!materi){ alert('Isi dulu Materi-nya.'); return; }
+      cls.materi.push({ id: uid(), date: date, materi: materi, pokokBahasan: pokokBahasan, materiSelanjutnya: materiSelanjutnya });
       scheduleSave();
       renderMateriTab(root, cls);
     });
@@ -2107,6 +2319,7 @@
     html += '<div class="weights-toggle">'+
       '<button class="btn" id="toggleWeights" style="font-size:12.5px;padding:8px 12px;">⚖ Bobot</button>'+
       '<button class="btn" id="exportExcelBtn" style="font-size:12.5px;padding:8px 12px;">⇩ Ekspor Excel</button>'+
+      '<button class="btn" id="printNilaiBtn" style="font-size:12.5px;padding:8px 12px;">🖨️ Cetak / PDF</button>'+
       '</div>';
 
     html += '<div class="weights-panel" id="weightsPanel">'+
@@ -2164,6 +2377,7 @@
       document.getElementById('weightsPanel').classList.toggle('open');
     });
     document.getElementById('exportExcelBtn').addEventListener('click', function(){ exportClassToExcel(cls); });
+    document.getElementById('printNilaiBtn').addEventListener('click', function(){ printNilai(cls); });
 
     root.querySelectorAll('.weights-panel input[type=number]').forEach(function(inp){
       inp.addEventListener('input', function(){
@@ -2232,6 +2446,97 @@
     });
   }
 
+  /* ---------------- Cetak / Simpan PDF (pakai fitur Print bawaan browser) ---------------- */
+
+  function printHTML(title, subtitle, bodyHTML, fontPt){
+    var area = document.getElementById('printArea');
+    if(!area){ alert('Fitur cetak tidak tersedia di perangkat ini.'); return; }
+    area.innerHTML =
+      '<div class="print-head">'+
+        '<h1>'+escapeHtml(title)+'</h1>'+
+        (subtitle ? '<p>'+escapeHtml(subtitle)+'</p>' : '')+
+      '</div>'+
+      bodyHTML;
+    area.style.setProperty('--print-font-size', (fontPt || 11) + 'pt');
+    window.print();
+  }
+
+  // Perkiraan sederhana ukuran font supaya tabel muat di satu halaman A4
+  // (landscape) — dihitung dari jumlah baris & kolom, bukan pengukuran
+  // pixel presisi (tidak bisa 100% dijamin utk kelas yang sangat besar /
+  // kolom yang sangat banyak, tapi cukup akurat utk ukuran kelas biasa).
+  function fitFontSize(rowCount, colCount){
+    var usableHeightMm = 250;   // tinggi kertas A4 portrait setelah margin, judul & jaga-jaga
+    var usableWidthMm = 178;    // lebar kertas A4 portrait setelah margin
+    var byHeight = usableHeightMm / (rowCount + 1) / 1.35;
+    var byWidth = usableWidthMm / colCount / 3.1;
+    var pt = Math.min(byHeight, byWidth);
+    return Math.max(5, Math.min(11, pt));
+  }
+
+  function printRekap(cls, month, monthLabel){
+    var identity = sheetsIdentityLabel();
+    var subtitleParts = [cls.name];
+    if(identity) subtitleParts.push(identity);
+    subtitleParts.push('Rekap ' + monthLabel);
+    var subtitle = subtitleParts.join(' — ');
+
+    var body = '<table class="print-table"><thead><tr><th>No</th><th>Nama</th><th>H</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead><tbody>';
+    var totals = {H:0,S:0,I:0,A:0};
+    cls.students.forEach(function(s, i){
+      var counts = {H:0,S:0,I:0,A:0};
+      Object.keys(cls.attendance).forEach(function(d){
+        if(d.slice(0,7)===month){ var code = cls.attendance[d][s.id]; if(code){ counts[code]++; totals[code]++; } }
+      });
+      var total = counts.H+counts.S+counts.I+counts.A;
+      var pct = total>0 ? Math.round((counts.H/total)*100) : 0;
+      body += '<tr><td>'+(i+1)+'</td><td style="text-align:left;">'+escapeHtml(s.name)+'</td>'+
+        '<td>'+counts.H+'</td><td>'+counts.S+'</td><td>'+counts.I+'</td><td>'+counts.A+'</td>'+
+        '<td>'+(total>0?pct+'%':'—')+'</td></tr>';
+    });
+    var totalAll = totals.H+totals.S+totals.I+totals.A;
+    var totalPct = totalAll>0 ? Math.round((totals.H/totalAll)*100) : 0;
+    body += '<tr style="font-weight:700;"><td colspan="2">Total</td><td>'+totals.H+'</td><td>'+totals.S+'</td><td>'+totals.I+'</td><td>'+totals.A+'</td><td>'+(totalAll>0?totalPct+'%':'—')+'</td></tr>';
+    body += '</tbody></table>';
+
+    var fontPt = fitFontSize(cls.students.length + 2, 7);
+    printHTML('Rekap Kehadiran', subtitle, body, fontPt);
+  }
+
+  function printNilai(cls){
+    var identity = sheetsIdentityLabel();
+    var subtitleParts = [cls.name];
+    if(identity) subtitleParts.push(identity);
+    var subtitle = subtitleParts.join(' — ');
+
+    var header = '<th>No</th><th style="text-align:left;">Nama</th>';
+    cls.harianItems.forEach(function(it){ header += '<th>'+escapeHtml(it.name)+'</th>'; });
+    header += '<th>Rata2 Harian</th>';
+    cls.tugasItems.forEach(function(it){ header += '<th>'+escapeHtml(it.name)+'</th>'; });
+    header += '<th>Rata2 Tugas</th><th>UTS</th><th>UAS</th><th>Rapor</th>';
+
+    var body = '<table class="print-table"><thead><tr>'+header+'</tr></thead><tbody>';
+    cls.students.forEach(function(s, i){
+      var sc = ensureScoreEntry(cls, s.id);
+      var r = computeRapor(cls, s.id);
+      var finalVal = (sc.raporOverride!==null && sc.raporOverride!==undefined && sc.raporOverride!=='') ? sc.raporOverride : r.computed;
+      body += '<tr><td>'+(i+1)+'</td><td style="text-align:left;">'+escapeHtml(s.name)+'</td>';
+      cls.harianItems.forEach(function(it){ var v=sc.harian[it.id]; body += '<td>'+(v!==undefined&&v!==null?v:'')+'</td>'; });
+      body += '<td>'+(r.hAvg!==null?round1(r.hAvg):'—')+'</td>';
+      cls.tugasItems.forEach(function(it){ var v=sc.tugas[it.id]; body += '<td>'+(v!==undefined&&v!==null?v:'')+'</td>'; });
+      body += '<td>'+(r.tAvg!==null?round1(r.tAvg):'—')+'</td>';
+      body += '<td>'+(sc.uts!==undefined&&sc.uts!==null?sc.uts:'')+'</td>';
+      body += '<td>'+(sc.uas!==undefined&&sc.uas!==null?sc.uas:'')+'</td>';
+      body += '<td style="font-weight:700;">'+(finalVal!==null&&finalVal!==undefined&&!isNaN(finalVal)?finalVal:'—')+'</td>';
+      body += '</tr>';
+    });
+    body += '</tbody></table>';
+
+    var colCount = 2 + cls.harianItems.length + 1 + cls.tugasItems.length + 1 + 3;
+    var fontPt = fitFontSize(cls.students.length + 1, colCount);
+    printHTML('Daftar Nilai', subtitle, body, fontPt);
+  }
+
   function exportClassToExcel(cls){
     if(typeof XLSX === 'undefined'){
       alert('Pustaka Excel belum siap dimuat. Periksa koneksi internet lalu coba lagi.');
@@ -2277,7 +2582,7 @@
   /* ---------------- Boot ---------------- */
 
   document.getElementById('appShell').addEventListener('click', function(e){
-    if(e.target && e.target.id === 'openBookBtn'){ goTOC(); return; }
+    if(e.target && e.target.id === 'openBookBtn'){ goJadwal(); return; }
     if(e.target && e.target.id === 'coverIdentityBadge'){ coverIdentityEditing = true; renderAll(); return; }
     if(e.target && e.target.id === 'coverIdentityApplyBtn'){ applyMapelGuruFromCover(); return; }
     if(e.target && e.target.hasAttribute && e.target.hasAttribute('data-select-identity')){
